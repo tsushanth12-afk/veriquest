@@ -1,0 +1,51 @@
+# ==========================================================================
+# VeriQuest — Docker Compose (Development)
+# ==========================================================================
+
+services:
+  # Redis for Celery broker
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Celery Worker (HDL execution)
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      # Mount Docker socket so worker can spawn execution containers
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  # Build the Icarus Verilog execution image
+  icarus-build:
+    build:
+      context: ./execution
+      dockerfile: Dockerfile
+    image: veriquest-icarus:latest
+    entrypoint: ["echo", "Icarus image built"]
+
+volumes:
+  redis_data:
