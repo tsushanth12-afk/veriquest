@@ -3,7 +3,7 @@
    With loading, empty, and error boundaries
    ========================================================================== */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { leaderboardApi } from '../api/questApi';
 import { LeaderboardEntry } from '../types/quest';
 import { Trophy, Medal, Award, Loader2, AlertTriangle } from 'lucide-react';
@@ -14,7 +14,7 @@ export const LeaderboardView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchLeaderboard = () => {
+  const fetchLeaderboard = useCallback(() => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -28,11 +28,11 @@ export const LeaderboardView: React.FC = () => {
         setErrorMessage('Failed to load leaderboard data. Please try again.');
         setIsLoading(false);
       });
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [activeTab]);
+  }, [fetchLeaderboard]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

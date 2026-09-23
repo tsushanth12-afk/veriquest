@@ -515,6 +515,106 @@ endmodule
 });
 
 // ----------------------------------------------------------------------------
+// TEST SUITE 9: Undriven Output Detection & Non-False-Positive Evaluation
+// ----------------------------------------------------------------------------
+console.log('\n--- 9. Undriven Output Detection & Strict Test Scoring ---');
+
+function extractModuleBodyTest(code) {
+  const clean = code.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '');
+  const modIdx = clean.indexOf('module');
+  if (modIdx === -1) return '';
+  const afterModule = clean.slice(modIdx + 6);
+  let depth = 0;
+  let semiIdx = -1;
+  for (let i = 0; i < afterModule.length; i++) {
+    const c = afterModule[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth = Math.max(0, depth - 1);
+    else if (c === ';' && depth === 0) {
+      semiIdx = i;
+      break;
+    }
+  }
+  if (semiIdx === -1) return '';
+  const bodyWithEnd = afterModule.slice(semiIdx + 1);
+  const endModIdx = bodyWithEnd.lastIndexOf('endmodule');
+  if (endModIdx === -1) return bodyWithEnd.trim();
+  return bodyWithEnd.slice(0, endModIdx).trim();
+}
+
+function hasActiveDriversTest(body) {
+  if (!body || !body.trim()) return false;
+  const hasAssign = /\bassign\s+/.test(body);
+  const hasAlways = /\b(always|always_comb|always_ff|always_latch|initial)\b/.test(body);
+  const hasPrimitives = /\b(and|nand|or|nor|xor|xnor|not|buf)\s*(\(|[A-Za-z_][A-Za-z0-9_]*\s*\()/.test(body);
+  return hasAssign || hasAlways || hasPrimitives;
+}
+
+test('Starter code with empty body is detected as undriven across all challenges', () => {
+  const starterCode = `
+// Design a 2-input AND gate
+module and_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+
+    // Enter your combinational logic here
+
+endmodule
+  `;
+  const body = extractModuleBodyTest(starterCode);
+  const driven = hasActiveDriversTest(body);
+  assert.strictEqual(driven, false, 'Expected starter code to have zero active drivers');
+});
+
+test('Arbitrary future challenge starter code has zero active drivers', () => {
+  const futureStarter = `
+module custom_alu_8bit (
+    input wire [7:0] a,
+    input wire [7:0] b,
+    input wire [2:0] opcode,
+    output wire [7:0] result
+);
+    // Student code goes here
+endmodule
+  `;
+  const body = extractModuleBodyTest(futureStarter);
+  const driven = hasActiveDriversTest(body);
+  assert.strictEqual(driven, false, 'Expected future challenge starter to have zero active drivers');
+});
+
+test('Module with declared internal wires but no drivers is detected as undriven', () => {
+  const codeWithWireOnly = `
+module and_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+    wire temp_signal;
+endmodule
+  `;
+  const body = extractModuleBodyTest(codeWithWireOnly);
+  const driven = hasActiveDriversTest(body);
+  assert.strictEqual(driven, false, 'Wire declaration without assignment must not count as active driver');
+});
+
+test('Module with valid continuous assignment is recognized as driven', () => {
+  const validCode = `
+module and_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+    assign y = a & b;
+endmodule
+  `;
+  const body = extractModuleBodyTest(validCode);
+  const driven = hasActiveDriversTest(body);
+  assert.strictEqual(driven, true, 'Valid assign statement must be recognized as active driver');
+});
+
+// ----------------------------------------------------------------------------
 // FINAL SUMMARY
 // ----------------------------------------------------------------------------
 console.log('\n====================================================');

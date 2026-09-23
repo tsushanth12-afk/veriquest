@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { ArrowRight, Sparkles, Award, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export const HeroQuestCard: React.FC = () => {
   const { user, openChallenge } = useApp();

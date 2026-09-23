@@ -75,6 +75,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isAuthenticated = !!session;
 
+  const loadProfile = useCallback(async (currentAuth?: User | null) => {
+    try {
+      const { data, error } = await api.getProfile();
+      if (data && !error) {
+        setUser(data as unknown as UserProfile);
+        return;
+      }
+    } catch {
+      // Profile API request failed or backend offline
+    }
+
+    // When authenticated but backend profile endpoint is pending,
+    // construct profile details from auth metadata instead of hardcoded mock user
+    if (currentAuth) {
+      const username =
+        currentAuth.user_metadata?.username ||
+        currentAuth.email?.split('@')[0] ||
+        'Student';
+      const fullName =
+        currentAuth.user_metadata?.display_name ||
+        currentAuth.user_metadata?.full_name ||
+        username;
+
+      setUser((prev) => ({
+        ...prev,
+        id: currentAuth.id,
+        username,
+        fullName,
+      }));
+    }
+  }, []);
+
   // Initialize auth on mount
   useEffect(() => {
     // Get initial session
@@ -111,43 +143,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadProfile]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
-
-  const loadProfile = useCallback(async (currentAuth?: User | null) => {
-    try {
-      const { data, error } = await api.getProfile();
-      if (data && !error) {
-        setUser(data as unknown as UserProfile);
-        return;
-      }
-    } catch {
-      // Profile API request failed or backend offline
-    }
-
-    // When authenticated but backend profile endpoint is pending,
-    // construct profile details from auth metadata instead of hardcoded mock user
-    if (currentAuth) {
-      const username =
-        currentAuth.user_metadata?.username ||
-        currentAuth.email?.split('@')[0] ||
-        'Student';
-      const fullName =
-        currentAuth.user_metadata?.display_name ||
-        currentAuth.user_metadata?.full_name ||
-        username;
-
-      setUser((prev) => ({
-        ...prev,
-        id: currentAuth.id,
-        username,
-        fullName,
-      }));
-    }
-  }, []);
 
   const refreshProfile = useCallback(async () => {
     await loadProfile(authUser);

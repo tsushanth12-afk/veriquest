@@ -2,7 +2,7 @@
    VeriQuest View — Challenge Library (Catalog with Loading/Empty/Error States)
    ========================================================================== */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { challengeApi } from '../api/challengeApi';
 import { PublicChallenge, Difficulty, ChallengeCategory } from '../types/challenge';
@@ -19,7 +19,7 @@ export const ChallengesView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ChallengeCategory | 'All'>('All');
   const [selectedStatus, setSelectedStatus] = useState<'All' | 'Solved' | 'Unsolved'>('All');
 
-  const fetchChallenges = () => {
+  const fetchChallenges = useCallback(() => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -34,15 +34,15 @@ export const ChallengesView: React.FC = () => {
         setChallenges(data);
         setIsLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setErrorMessage('Unable to load challenge catalog. Please try again.');
         setIsLoading(false);
       });
-  };
+  }, [searchQuery, selectedDifficulty, selectedCategory, selectedStatus]);
 
   useEffect(() => {
     fetchChallenges();
-  }, [searchQuery, selectedDifficulty, selectedCategory, selectedStatus]);
+  }, [fetchChallenges]);
 
   const categories: (ChallengeCategory | 'All')[] = [
     'All',
