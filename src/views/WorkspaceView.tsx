@@ -15,7 +15,7 @@ import { SubmissionPanel } from '../components/workspace/SubmissionPanel';
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 
 export const WorkspaceView: React.FC = () => {
-  const { activeChallengeId, setCurrentRoute, addToast, refreshProfile } = useApp();
+  const { activeChallengeId, setCurrentRoute, addToast, refreshProfile, awardXP } = useApp();
   const [challenge, setChallenge] = useState<PublicChallenge | null>(null);
   const [isLoadingChallenge, setIsLoadingChallenge] = useState(true);
   const [code, setCode] = useState<string>('');
@@ -197,12 +197,21 @@ export const WorkspaceView: React.FC = () => {
           setSubmissionResult(res);
 
           if (res.status === 'ACCEPTED') {
-            const xp = res.xpEarned || challenge.xp || 40;
-            addToast({
-              type: 'success',
-              title: `Challenge Verified! +${xp} XP`,
-              description: 'Timing closure met. Server progress updated.',
-            });
+            const xp = res.xpEarned ?? 0;
+            if (xp > 0) {
+              awardXP(xp);
+              addToast({
+                type: 'success',
+                title: `Challenge Verified! +${xp} XP`,
+                description: 'Timing closure met. Server progress updated.',
+              });
+            } else {
+              addToast({
+                type: 'success',
+                title: `Challenge Verified! (+0 XP)`,
+                description: 'Already accepted in a previous submission. Zero XP awarded.',
+              });
+            }
             refreshProfile();
           } else if (res.status === 'COMPILATION_ERROR') {
             addToast({
@@ -313,7 +322,11 @@ export const WorkspaceView: React.FC = () => {
             flexDirection: 'column',
           }}
         >
-          <ProblemPanel challenge={challenge} />
+          <ProblemPanel
+            challenge={challenge}
+            onLoadCode={setCode}
+            onSetResult={setSubmissionResult}
+          />
         </div>
 
         {/* Center Pane: Monaco Editor (Warm Theme) */}

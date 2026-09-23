@@ -85,6 +85,98 @@ endmodule
     acceptanceRate: 100,
   },
   {
+    id: 'ch-fund-mux-2to1',
+    title: '2-to-1 Multiplexer',
+    slug: 'mux-2to1',
+    difficulty: 'Easy',
+    category: 'Combinational Logic',
+    level: 1,
+    xp: 50,
+    estimatedMinutes: 10,
+    description: 'Design a 2-to-1 multiplexer that selects between two single-bit inputs a and b using a select signal sel. When sel is 0, output y equals a. When sel is 1, output y equals b.',
+    learningObjective: 'Master conditional data routing and multiplexer RTL implementation in Verilog HDL.',
+    constraints: [
+      'Pure combinational logic (instantaneous propagation)',
+      'Inputs: a, b, sel. Output: y.',
+    ],
+    ioPins: [
+      { name: 'a', direction: 'input', width: '[0:0]', description: 'Data input 0' },
+      { name: 'b', direction: 'input', width: '[0:0]', description: 'Data input 1' },
+      { name: 'sel', direction: 'input', width: '[0:0]', description: 'Channel select bit' },
+      { name: 'y', direction: 'output', width: '[0:0]', description: 'Selected data output' },
+    ],
+    examples: [
+      { input: 'sel = 0, a = 1, b = 0', expectedOutput: 'y = 1', explanation: 'sel=0 routes input a' },
+      { input: 'sel = 1, a = 1, b = 0', expectedOutput: 'y = 0', explanation: 'sel=1 routes input b' },
+    ],
+    hints: [
+      'You can use a continuous assignment with a conditional ternary operator: assign y = sel ? b : a;',
+      'Alternatively, an always @(*) block with if-else or case(sel) can be used.',
+    ],
+    starterCode: `// Design a 2-to-1 Multiplexer
+// When sel is 0, y = a. When sel is 1, y = b.
+
+module mux_2to1 (
+    input  wire a,
+    input  wire b,
+    input  wire sel,
+    output wire y
+);
+
+    // Enter your combinational logic here
+
+endmodule
+`,
+    solved: false,
+    attemptsCount: 0,
+    acceptanceRate: 100,
+  },
+  {
+    id: 'ch-fund-xor-gate',
+    title: 'Two-Input XOR Gate',
+    slug: 'xor-gate',
+    difficulty: 'Easy',
+    category: 'Fundamentals',
+    level: 1,
+    xp: 45,
+    estimatedMinutes: 10,
+    description: 'Implement a basic 2-input XOR (exclusive OR) gate in Verilog HDL. The output y must be high (1) if and only if exactly one of the inputs a or b is high. When both inputs are low or both inputs are high, the output must be low (0).',
+    learningObjective: 'Master exclusive disjunction and boolean operators in Verilog HDL.',
+    constraints: [
+      'Combinational logic only (no sequential clock/registers)',
+      'Propagation delay: instantaneous (zero-delay simulation)',
+    ],
+    ioPins: [
+      { name: 'a', direction: 'input', width: '[0:0]', description: 'First boolean operand' },
+      { name: 'b', direction: 'input', width: '[0:0]', description: 'Second boolean operand' },
+      { name: 'y', direction: 'output', width: '[0:0]', description: 'Boolean XOR product' },
+    ],
+    examples: [
+      { input: 'a = 0, b = 1', expectedOutput: 'y = 1', explanation: 'Inputs differ -> output is 1' },
+      { input: 'a = 1, b = 1', expectedOutput: 'y = 0', explanation: 'Inputs identical -> output is 0' },
+    ],
+    hints: [
+      'You can use the bitwise XOR operator: assign y = a ^ b;',
+      'Alternatively, you can instantiate the built-in primitive: xor g1(y, a, b);',
+    ],
+    starterCode: `// Design a Two-Input XOR Gate
+// When exactly one input is 1, y = 1. Otherwise, y = 0.
+
+module xor_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+
+    // Enter your combinational logic here
+
+endmodule
+`,
+    solved: false,
+    attemptsCount: 0,
+    acceptanceRate: 100,
+  },
+  {
     id: 'ch-comb-priority-8to3',
 
     title: 'Priority Encoder 8-to-3',

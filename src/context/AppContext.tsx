@@ -54,6 +54,7 @@ interface AppContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
+  awardXP: (amount: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -230,6 +231,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const awardXP = (amount: number) => {
+    if (amount <= 0) return;
+    setUser((prev) => {
+      const updatedXP = prev.stats.currentXP + amount;
+      MOCK_USER.stats.currentXP = updatedXP;
+      MOCK_USER.stats.totalSolved = prev.stats.totalSolved + 1;
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          currentXP: updatedXP,
+          totalSolved: prev.stats.totalSolved + 1,
+        },
+      };
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -257,6 +275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         resetPassword,
         refreshProfile,
+        awardXP,
       }}
     >
       {children}

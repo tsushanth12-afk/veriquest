@@ -4,17 +4,25 @@
 
 import React, { useState } from 'react';
 import { PublicChallenge } from '../../types/challenge';
+import { SubmissionResult } from '../../types/submission';
 import { DifficultyBadge } from '../common/DifficultyBadge';
 import { XPBadge } from '../common/XPBadge';
-import { BookOpen, History, HelpCircle, Target, CheckCircle2, ChevronRight, XCircle } from 'lucide-react';
+import { BookOpen, History, HelpCircle, Target, CheckCircle2, ChevronRight, XCircle, ShieldCheck } from 'lucide-react';
 import { MOCK_SUBMISSIONS } from '../../api/mockData';
+import { TestMatrixPanel } from './TestMatrixPanel';
 
 interface ProblemPanelProps {
   challenge: PublicChallenge;
+  onLoadCode?: (code: string) => void;
+  onSetResult?: (res: SubmissionResult) => void;
 }
 
-export const ProblemPanel: React.FC<ProblemPanelProps> = ({ challenge }) => {
-  const [activeTab, setActiveTab] = useState<'description' | 'submissions' | 'hints'>('description');
+export const ProblemPanel: React.FC<ProblemPanelProps> = ({
+  challenge,
+  onLoadCode,
+  onSetResult,
+}) => {
+  const [activeTab, setActiveTab] = useState<'description' | 'submissions' | 'hints' | 'testmatrix'>('description');
   const [revealedHints, setRevealedHints] = useState<number[]>([0]);
 
   const toggleHint = (index: number) => {
@@ -66,6 +74,15 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({ challenge }) => {
         >
           <HelpCircle size={13} />
           <span>Hints ({challenge.hints.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('testmatrix')}
+          className={`neu-btn ${activeTab === 'testmatrix' ? 'neu-btn-primary' : 'neu-btn-ghost'}`}
+          style={{ padding: '4px 10px', fontSize: '11px', gap: '5px' }}
+        >
+          <ShieldCheck size={13} style={{ color: 'var(--accent)' }} />
+          <span>Test Matrix (A–I)</span>
         </button>
       </div>
 
@@ -284,6 +301,14 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({ challenge }) => {
               );
             })}
           </div>
+        )}
+
+        {activeTab === 'testmatrix' && (
+          <TestMatrixPanel
+            challengeSlug={challenge.slug}
+            onLoadCode={onLoadCode || (() => {})}
+            onSetResult={onSetResult || (() => {})}
+          />
         )}
       </div>
     </div>

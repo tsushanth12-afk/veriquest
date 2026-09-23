@@ -31,6 +31,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    if (typeof window !== 'undefined') {
+      (window as any).__veriquestEditor = editor;
+      (window as any).__setEditorCode = (newCode: string) => {
+        editor.setValue(newCode);
+        onChange(newCode);
+      };
+    }
 
     // Define custom warm VeriQuest Monaco Theme matching Section 0 palette
     monaco.editor.defineTheme('veriquest-warm', {
