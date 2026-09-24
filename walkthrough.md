@@ -109,3 +109,107 @@ The generated bundle in `dist/assets/index-DKi5J3Zu.js` was exhaustively inspect
 ## 5. Security Verdict
 
 **TESTBENCH/SOLUTION LEAKAGE ELIMINATED**
+
+---
+
+# Remediation Report: Critical Security Fix F-05 — Rate Limiting on Live Evaluation Endpoints
+
+**Status**: **RESOLVED**  
+**Classification**: Vulnerability F-05 (Availability / Denial of Service)  
+**Date**: September 24, 2026  
+
+---
+
+## 1. Executive Summary
+
+Previously, the live evaluation endpoints (`/api/internal/evaluate` and `/api/internal/evaluate-matrix`) in `vite.config.ts` had **zero rate limiting**. Any client could send unlimited concurrent or rapid-fire POST requests, each triggering a heavy `@veriflow/iverilog-wasm` compile and simulate cycle within the Node.js process. A buggy client loop or flood script could easily exhaust host CPU and memory, crashing grading for all users.
+
+While the inactive Python backend had a planned Redis sliding-window limiter, it provided **zero protection** to the live evaluation pipeline.
+
+The fix introduces a generic, in-memory sliding-window rate limiter directly into the active Vite dev-server middleware.
+
+---
+
+## 2. Limit Chosen & Architectural Rationale
+
+- **Configured Limit**: **20 requests per 60-second sliding window per client IP**.
+- **Reasoning**:
+  1. *Legitimate Usage Headroom*: Running the full 9-case test matrix (`Run All 9 Cases`) generates 9 sequential requests. A threshold of 20 requests allows a student to run the complete 9-case matrix plus iterative code submissions and re-tests in quick succession without false positives.
+  2. *Resource Protection*: Concurrently executing more than 20 WASM compilation cycles in under a minute poses severe denial-of-service risks to dev/classroom environments.
+  3. *Client Identification*: Keyed by client IP (`X-Forwarded-For` with socket IP fallback) as an immediate stopgap pending production per-user authentication.
+  4. *Memory Leak Prevention*: Maps auto-prune expired timestamps when the map exceeds 200 entries, preventing memory leaks over long dev sessions.
+
+---
+
+## 3. Step 3 Verification Results & Command Evidence
+
+Automated test script (`scratch/test_rate_limiting.mjs`) verified all required criteria:
+
+### a) Controlled Burst Below Limit (9-Case Test Matrix)
+All 9 test matrix cases for `and-gate-demo` were dispatched in rapid succession:
+```text
+--- Step 3a: Controlled Burst Below Limit (9-Case Test Matrix) ---
+  [Case A] HTTP 200 -> status: ACCEPTED, passed: true
+  [Case B] HTTP 200 -> status: FAILED, passed: false
+  [Case C] HTTP 200 -> status: FAILED, passed: false
+  [Case D] HTTP 200 -> status: COMPILATION_ERROR, passed: false
+  [Case E] HTTP 200 -> status: ACCEPTED, passed: true
+  [Case F] HTTP 200 -> status: COMPILATION_ERROR, passed: false
+  [Case G] HTTP 200 -> status: FAILED, passed: false
+  [Case H] HTTP 200 -> status: FAILED, passed: false
+  [Case I] HTTP 200 -> status: ACCEPTED, passed: true
+Result: 9/9 test matrix cases succeeded under rate limit (HTTP 200)
+```
+Live UI test run via browser subagent confirmed: **Matrix Status: 9 / 9 PASSED (✓ ALL PASS)**.
+
+### b) Burst Exceeding Limit (HTTP 429 Enforcement)
+Client `198.51.100.20` consumed its 20 allowed requests, then sent requests #21 and #22:
+```text
+--- Step 3b: Burst Exceeding the Limit (Rate Limiting Enforcement) ---
+Sending 20 allowed requests for client 198.51.100.20...
+.................... (20/20 allowed requests consumed)
+
+Sending Request #21 (Should be rate-limited)...
+  Response Status Code: 429
+  Response Retry-After Header: 57
+  Response Body: {
+  "status": "RATE_LIMITED",
+  "message": "Too many evaluation requests. Rate limit of 20 requests per minute exceeded.",
+  "retryAfterMs": 56640
+}
+  [PASS] Request #21 rejected with clean HTTP 429 and RATE_LIMITED JSON body
+
+Sending Request #22 to /api/internal/evaluate (Testing shared path protection)...
+  Response Status Code: 429
+  Response Body: {
+  "status": "RATE_LIMITED",
+  "message": "Too many evaluation requests. Rate limit of 20 requests per minute exceeded.",
+  "retryAfterMs": 56638
+}
+  [PASS] Request #22 rejected with clean HTTP 429 on /api/internal/evaluate
+```
+
+### c) Resumption After Rate-Limit Window Passes
+After the 60-second window elapsed, evaluation immediately resumed normal operation:
+```text
+Waiting for rate limit window to expire for client 198.51.100.20...
+SUCCESS! Request succeeded with HTTP 200:
+Status: ACCEPTED | Tests Passed: 4/4
+```
+
+### d) Generalizability Across Challenges
+The rate limiter applies generically without any challenge-specific branching:
+```text
+--- Step 3d: Generalizability Across Multiple Challenges ---
+  Attempt with challengeId 'mux-2to1': HTTP 429 -> RATE_LIMITED
+  [PASS] Rate limiting applies identically to challengeId "mux-2to1" without challenge branching
+  Fresh client 198.51.100.30 on challengeId 'mux-2to1': HTTP 200 -> ACCEPTED
+  [PASS] Fresh client succeeds normally for challengeId "mux-2to1"
+```
+
+---
+
+## 4. Final Security Verdict
+
+**RATE LIMITING VERIFIED — LIVE PATH PROTECTED**
+
