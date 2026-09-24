@@ -1,8 +1,13 @@
 /* ==========================================================================
-   VeriQuest — Authoritative Testbench Catalog
+   VeriQuest — Authoritative Testbench Catalog (SERVER-ONLY)
    Stores hidden testbenches, module definitions, and verification test matrices
    keyed strictly by challengeId.
    Zero branching in evaluator logic — challengeId only performs catalog lookup.
+
+   CRITICAL SECURITY INVARIANT:
+   This module contains confidential testbenches and official solutions.
+   It must NEVER be imported, directly or transitively, by any client-rendered component.
+   Only server-side runtimes (vite.config.ts middleware or backend services) may import this.
    ========================================================================== */
 
 export interface TestCaseDef {
@@ -564,4 +569,13 @@ export function getTestbenchConfig(challengeIdOrSlug: string): ChallengeTestbenc
   }
 
   return null;
+}
+
+/**
+ * Server-only helper to look up a specific test case definition for execution.
+ */
+export function getTestMatrixExecutable(challengeIdOrSlug: string, testId: string): TestCaseDef | null {
+  const config = getTestbenchConfig(challengeIdOrSlug);
+  if (!config) return null;
+  return config.testMatrix.find((t) => t.id === testId) || null;
 }

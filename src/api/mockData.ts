@@ -64,7 +64,7 @@ export const MOCK_CHALLENGES: PublicChallenge[] = [
       { input: 'a = 1, b = 1', expectedOutput: 'y = 1', explanation: '1 & 1 = 1' },
     ],
     hints: [
-      'In Verilog, continuous assignments use the `assign` keyword: `assign y = a & b;`',
+      'In Verilog, continuous assignments use the `assign` keyword: `assign out = in1 & in2;`',
       'The `&` operator performs a bitwise boolean AND operation.',
     ],
     starterCode: `// Design a 2-input AND gate
@@ -110,7 +110,7 @@ endmodule
       { input: 'sel = 1, a = 1, b = 0', expectedOutput: 'y = 0', explanation: 'sel=1 routes input b' },
     ],
     hints: [
-      'You can use a continuous assignment with a conditional ternary operator: assign y = sel ? b : a;',
+      'You can use a continuous assignment with a conditional ternary operator: `assign out = select ? in1 : in0;`',
       'Alternatively, an always @(*) block with if-else or case(sel) can be used.',
     ],
     starterCode: `// Design a 2-to-1 Multiplexer
@@ -156,8 +156,8 @@ endmodule
       { input: 'a = 1, b = 1', expectedOutput: 'y = 0', explanation: 'Inputs identical -> output is 0' },
     ],
     hints: [
-      'You can use the bitwise XOR operator: assign y = a ^ b;',
-      'Alternatively, you can instantiate the built-in primitive: xor g1(y, a, b);',
+      'You can use the bitwise XOR operator: `assign out = in1 ^ in2;`',
+      'Alternatively, you can instantiate the built-in primitive: `xor g1(out, in1, in2);`',
     ],
     starterCode: `// Design a Two-Input XOR Gate
 // When exactly one input is 1, y = 1. Otherwise, y = 0.

@@ -206,9 +206,9 @@ export const AdminView: React.FC = () => {
       estimated_minutes: mock?.estimatedMinutes || 15,
       starter_code: mock?.starterCode || '',
       learning_objective: mock?.learningObjective || '',
-      official_solution: 'assign y = a & b;',
-      hidden_testbench: '// Private staff testbench',
-      private_notes: 'Demo challenge for students.',
+      official_solution: '',
+      hidden_testbench: '',
+      private_notes: '',
     });
   };
 
@@ -708,7 +708,7 @@ export const AdminView: React.FC = () => {
                   rows={7}
                   value={form.official_solution}
                   onChange={(e) => setForm({ ...form, official_solution: e.target.value })}
-                  placeholder="module and_gate (...); assign y = a & b; endmodule"
+                  placeholder="module module_name (...); // Implementation here endmodule"
                   style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--text-main)', resize: 'vertical' }}
                 />
               </div>

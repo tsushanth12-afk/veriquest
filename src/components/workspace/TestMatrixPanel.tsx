@@ -9,8 +9,8 @@ import { Play, CheckCircle2, XCircle, AlertTriangle, ShieldCheck } from 'lucide-
 import { submissionApi } from '../../api/submissionApi';
 import { SubmissionResult } from '../../types/submission';
 
-import { getTestbenchConfig, TestCaseDef } from '../../evaluator/testbenchCatalog';
-export type { TestCaseDef };
+import { getTestMatrixMetadata, TestCaseMetadata } from '../../evaluator/testMatrixMetadata';
+export type TestCaseDef = TestCaseMetadata;
 
 export interface TestResultItem {
   testId: string;
@@ -27,21 +27,20 @@ export interface TestResultItem {
 
 interface TestMatrixPanelProps {
   challengeSlug: string;
-  onLoadCode: (code: string) => void;
+  onLoadCode?: (code: string) => void;
   onSetResult: (res: SubmissionResult) => void;
 }
 
 export const TestMatrixPanel: React.FC<TestMatrixPanelProps> = ({
   challengeSlug,
-  onLoadCode,
   onSetResult,
 }) => {
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [currentRunningId, setCurrentRunningId] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, TestResultItem>>({});
 
-  const config = getTestbenchConfig(challengeSlug);
-  const testList = config?.testMatrix || [];
+  const metadata = getTestMatrixMetadata(challengeSlug);
+  const testList = metadata?.testMatrix || [];
 
   if (testList.length === 0) {
     return (
@@ -70,50 +69,10 @@ export const TestMatrixPanel: React.FC<TestMatrixPanelProps> = ({
     );
   }
 
-  const pollUntilTerminal = async (submissionId: string, isRemote: boolean = false): Promise<SubmissionResult> => {
-    const terminal = new Set(['ACCEPTED', 'FAILED', 'COMPILATION_ERROR', 'SYSTEM_ERROR', 'TIMEOUT']);
-    const start = Date.now();
-    while (Date.now() - start < 10000) {
-      const res = await submissionApi.pollSubmissionStatus(submissionId, isRemote);
-      if (terminal.has(res.status)) {
-        return res;
-      }
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    return await submissionApi.pollSubmissionStatus(submissionId, isRemote);
-  };
-
-  const executeSingleTest = async (test: TestCaseDef): Promise<TestResultItem> => {
+  const executeSingleTest = async (test: TestCaseMetadata): Promise<TestResultItem> => {
     const t0 = Date.now();
 
-    if (test.id === 'G' && test.secondaryCode) {
-      // Step G: First submit correct, then submit broken
-      const sub1 = await submissionApi.submitSolution(challengeSlug, test.code);
-      await pollUntilTerminal(sub1.submissionId, false);
-
-      // Now submit broken
-      const sub2 = await submissionApi.submitSolution(challengeSlug, test.secondaryCode);
-      const res = await pollUntilTerminal(sub2.submissionId, false);
-      onSetResult(res);
-
-      const isPass = res.status === test.expectedStatus;
-      return {
-        testId: test.id,
-        title: test.title,
-        expectedStatus: test.expectedStatus,
-        actualStatus: res.status,
-        passed: isPass,
-        compilerOutput: res.compilerOutput || '',
-        testsPassed: res.testsPassed,
-        totalTests: res.totalTests,
-        xpEarned: res.xpEarned,
-        durationMs: Date.now() - t0,
-      };
-    }
-
-    onLoadCode(test.code);
-    const { submissionId, isRemote } = await submissionApi.submitSolution(challengeSlug, test.code);
-    const res = await pollUntilTerminal(submissionId, isRemote);
+    const res = await submissionApi.runTestMatrixCase(challengeSlug, test.id);
     onSetResult(res);
 
     let isPass = res.status === test.expectedStatus;

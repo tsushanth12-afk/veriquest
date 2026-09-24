@@ -323,4 +323,55 @@ export const submissionApi = {
       };
     }
   },
+
+  /**
+   * Dispatches a test matrix case to the server-side evaluator endpoint.
+   * Client receives execution status/telemetry only; solution code never reaches client.
+   */
+  async runTestMatrixCase(
+    challengeSlug: string,
+    testId: string
+  ): Promise<SubmissionResult> {
+    const res = await fetch('/api/internal/evaluate-matrix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId: challengeSlug, testId }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Matrix evaluation failed with HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const challenge = MOCK_CHALLENGES.find(
+      (c) => c.id === challengeSlug || c.slug === challengeSlug
+    );
+
+    let xpEarned = 0;
+    const normStatus = normalizeBackendStatus(data.status);
+    if (normStatus === 'ACCEPTED') {
+      const alreadyCompleted = getCompletedChallenges().has(challengeSlug);
+      if (alreadyCompleted || testId === 'I') {
+        xpEarned = 0;
+      } else {
+        xpEarned = challenge?.xp || 40;
+        recordChallengeCompleted(challengeSlug);
+      }
+    }
+
+    return {
+      submissionId: `matrix_${testId}_${Date.now()}`,
+      challengeId: challengeSlug,
+      status: normStatus,
+      testsPassed: data.testsPassed ?? 0,
+      totalTests: data.totalTests ?? 0,
+      executionTimeMs: data.executionTimeMs ?? 0,
+      simulationNanoseconds: data.simulationNanoseconds ?? 0,
+      xpEarned,
+      compilerOutput: data.compilerOutput || '',
+      failedVector: data.failedVector,
+      submittedAt: new Date().toISOString(),
+    };
+  },
 };
+
