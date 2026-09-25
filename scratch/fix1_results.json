@@ -1,0 +1,162 @@
+[
+  {
+    "challenge": "and-gate-demo",
+    "inputType": "A: Syntax/Token Corruption (Stray Brace)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: syntax error\nsolution.v:4: error: Syntax error in continuous assignment\n",
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "inputType": "B: Undeclared/Invalid Reference (Undefined Module/Function)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: error: Unknown module type: undefined_submodule_xyz\n2 error(s) during elaboration.\n*** These modules were missing:\n        undefined_submodule_xyz referenced 1 times.\n***\n",
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "inputType": "C: Missing Semicolon / Unterminated Statement",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:5: syntax error\nsolution.v:5: error: Invalid module item.\n",
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "inputType": "D: Pure Random Garbage / Non-Verilog",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:1: syntax error\nI give up.\n",
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "inputType": "E: Empty / Whitespace-Only Submission",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Evaluator Error] SOURCE_EMPTY: No student source code provided for compilation.\nProvenance check failed: cannot submit empty payload to compiler.",
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "inputType": "A: Syntax/Token Corruption (Stray Brace)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: syntax error\nsolution.v:4: error: Syntax error in continuous assignment\n",
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "inputType": "B: Undeclared/Invalid Reference (Undefined Module/Function)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: error: Unknown module type: undefined_submodule_xyz\n2 error(s) during elaboration.\n*** These modules were missing:\n        undefined_submodule_xyz referenced 1 times.\n***\n",
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "inputType": "C: Missing Semicolon / Unterminated Statement",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:5: syntax error\nsolution.v:5: error: Invalid module item.\n",
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "inputType": "D: Pure Random Garbage / Non-Verilog",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:1: syntax error\nI give up.\n",
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "inputType": "E: Empty / Whitespace-Only Submission",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Evaluator Error] SOURCE_EMPTY: No student source code provided for compilation.\nProvenance check failed: cannot submit empty payload to compiler.",
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "inputType": "A: Syntax/Token Corruption (Stray Brace)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: syntax error\nsolution.v:4: error: Syntax error in continuous assignment\n",
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "inputType": "B: Undeclared/Invalid Reference (Undefined Module/Function)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: error: Unknown module type: undefined_submodule_xyz\n2 error(s) during elaboration.\n*** These modules were missing:\n        undefined_submodule_xyz referenced 1 times.\n***\n",
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "inputType": "C: Missing Semicolon / Unterminated Statement",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:5: syntax error\nsolution.v:5: error: Invalid module item.\n",
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "inputType": "D: Pure Random Garbage / Non-Verilog",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:1: syntax error\nI give up.\n",
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "inputType": "E: Empty / Whitespace-Only Submission",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Evaluator Error] SOURCE_EMPTY: No student source code provided for compilation.\nProvenance check failed: cannot submit empty payload to compiler.",
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "inputType": "A: Syntax/Token Corruption (Stray Brace)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: syntax error\nsolution.v:4: error: Syntax error in continuous assignment\n",
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "inputType": "B: Undeclared/Invalid Reference (Undefined Module/Function)",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:4: error: Unknown module type: undefined_submodule_xyz\n2 error(s) during elaboration.\n*** These modules were missing:\n        undefined_submodule_xyz referenced 1 times.\n***\n",
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "inputType": "C: Missing Semicolon / Unterminated Statement",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:5: syntax error\nsolution.v:5: error: Invalid module item.\n",
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "inputType": "D: Pure Random Garbage / Non-Verilog",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Icarus Verilog 12.0] Compilation failed:\nsolution.v:1: syntax error\nI give up.\n",
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "inputType": "E: Empty / Whitespace-Only Submission",
+    "expectedStatus": "COMPILATION_ERROR",
+    "actualStatus": "COMPILATION_ERROR",
+    "compilerEvidence": "[Evaluator Error] SOURCE_EMPTY: No student source code provided for compilation.\nProvenance check failed: cannot submit empty payload to compiler.",
+    "passed": true
+  }
+]

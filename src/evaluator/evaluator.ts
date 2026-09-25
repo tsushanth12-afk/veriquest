@@ -15,6 +15,7 @@ import { getTestbenchConfig } from './testbenchCatalog.ts';
 
 export type EvaluatorStatus =
   | 'ACCEPTED'
+  | 'WRONG_ANSWER'
   | 'FAILED'
   | 'COMPILATION_ERROR'
   | 'EVALUATOR_NOT_CONFIGURED'

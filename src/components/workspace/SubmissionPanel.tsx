@@ -387,7 +387,7 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
             )}
 
             {/* Failed State / Wrong Answer */}
-            {result && result.status === 'FAILED' && (
+            {result && (result.status === 'WRONG_ANSWER' || result.status === 'FAILED') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div
                   className="neu-card"

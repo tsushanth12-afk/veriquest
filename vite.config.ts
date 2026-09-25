@@ -12,6 +12,7 @@ interface RateLimitRecord {
 
 const RATE_LIMIT_WINDOW_MS = 60_000; // 60-second sliding window
 const MAX_REQUESTS_PER_WINDOW = 20;  // 20 requests per minute per IP
+const MAX_PAYLOAD_BYTES = 65_536;     // 64 KiB maximum request body size
 
 const clientRequests = new Map<string, RateLimitRecord>();
 
@@ -65,29 +66,63 @@ function iverilogEvaluatorPlugin(): Plugin {
       return next();
     }
 
+    // 1. Enforce generic sliding-window rate limit (identically across all endpoints & challenges)
+    const clientIp = getClientIp(req);
+    const { allowed, retryAfterMs } = checkRateLimit(clientIp);
+
+    if (!allowed) {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Retry-After', Math.ceil(retryAfterMs / 1000).toString());
+      res.statusCode = 429;
+      res.end(JSON.stringify({
+        status: 'RATE_LIMITED',
+        message: `Too many evaluation requests. Rate limit of ${MAX_REQUESTS_PER_WINDOW} requests per minute exceeded.`,
+        retryAfterMs,
+      }));
+      return;
+    }
+
+    // 2. Enforce 64 KB (65,536 bytes) payload limit on Content-Length header shortcut
+    const rawContentLength = req.headers['content-length'];
+    if (rawContentLength) {
+      const contentLength = parseInt(rawContentLength, 10);
+      if (!isNaN(contentLength) && contentLength > MAX_PAYLOAD_BYTES) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 413;
+        res.end(JSON.stringify({
+          status: 'SUBMISSION_TOO_LARGE',
+          message: 'Submission exceeds the 64 KB limit.',
+        }));
+        return;
+      }
+    }
+
+    // 3. Accumulate body with streaming byte boundary (protects against chunked or spoofed headers)
     let body = '';
+    let receivedBytes = 0;
+    let isTooLarge = false;
+
     req.on('data', (chunk: any) => {
+      if (isTooLarge) return;
+      receivedBytes += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk);
+      if (receivedBytes > MAX_PAYLOAD_BYTES) {
+        isTooLarge = true;
+        req.pause();
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 413;
+        res.end(JSON.stringify({
+          status: 'SUBMISSION_TOO_LARGE',
+          message: 'Submission exceeds the 64 KB limit.',
+        }));
+        return;
+      }
       body += chunk.toString();
     });
 
     req.on('end', async () => {
-      // 1. Enforce generic sliding-window rate limit (identically across all endpoints & challenges)
-      const clientIp = getClientIp(req);
-      const { allowed, retryAfterMs } = checkRateLimit(clientIp);
+      if (isTooLarge) return;
 
-      if (!allowed) {
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Retry-After', Math.ceil(retryAfterMs / 1000).toString());
-        res.statusCode = 429;
-        res.end(JSON.stringify({
-          status: 'RATE_LIMITED',
-          message: `Too many evaluation requests. Rate limit of ${MAX_REQUESTS_PER_WINDOW} requests per minute exceeded.`,
-          retryAfterMs,
-        }));
-        return;
-      }
-
-      // 2. Dispatch to specific evaluator handler
+      // 4. Dispatch to specific evaluator handler
       if (isEvaluate) {
         try {
           const { challengeId, code } = JSON.parse(body || '{}');

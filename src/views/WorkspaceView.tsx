@@ -184,11 +184,14 @@ export const WorkspaceView: React.FC = () => {
 
         const terminalStatuses: SubmissionStatus[] = [
           'ACCEPTED',
+          'WRONG_ANSWER',
           'FAILED',
           'COMPILATION_ERROR',
+          'SIMULATION_ERROR',
           'TIMEOUT',
           'RESOURCE_LIMIT',
           'SYSTEM_ERROR',
+          'CANCELLED',
         ];
 
         if (terminalStatuses.includes(res.status)) {

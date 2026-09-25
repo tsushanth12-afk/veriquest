@@ -10,10 +10,10 @@
    5. Resubmitting an already-ACCEPTED solution awards zero additional XP.
    ========================================================================== */
 
-import { SubmissionStatus, SubmissionResult } from '../types/submission';
-import { api } from './client';
-import { MOCK_CHALLENGES } from './mockData';
-import type { EvaluatorResult } from '../evaluator/evaluator';
+import { SubmissionStatus, SubmissionResult } from '../types/submission.ts';
+import { api } from './client.ts';
+import { MOCK_CHALLENGES } from './mockData.ts';
+import type { EvaluatorResult } from '../evaluator/evaluator.ts';
 
 interface ActiveLocalJob {
   submissionId: string;
@@ -24,36 +24,124 @@ interface ActiveLocalJob {
 
 const localJobs = new Map<string, ActiveLocalJob>();
 
-// XP Idempotency tracking (client-side stopgap until backend unique constraint takes over)
+/* ==========================================================================
+   TEMPORARY CLIENT-SIDE TAMPER RESISTANCE STOPGAP (F-04)
+   
+   IMPORTANT NOTICE:
+   This is explicitly a temporary client-side mitigation designed to deter
+   casual manipulation (e.g. single-click localStorage clearing or manual JSON edits).
+   It is NOT server-authoritative and CANNOT make client state secure against
+   a determined user with browser DevTools.
+   
+   Permanent resolution requires the real backend's database-transaction-based
+   XP idempotency and authenticated user records (backend/app/gamification/xp.py).
+   ========================================================================== */
+
 const COMPLETED_SET_KEY = 'veriquest_completed_challenge_ids';
+const INTEGRITY_LEDGER_KEY = 'veriquest_ledger_integrity';
+const SESSION_LEDGER_KEY = 'veriquest_session_ledger';
+
+function computeLedgerChecksum(ids: string[]): string {
+  const str = `v1:${[...ids].sort().join(',')}:veriquest_stopgap_salt`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
 const inMemoryCompletedSet = new Set<string>();
 
 export function getCompletedChallenges(): Set<string> {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const raw = localStorage.getItem(COMPLETED_SET_KEY);
-      if (raw) {
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) {
-          return new Set(arr);
+  const knownCompleted = new Set<string>(inMemoryCompletedSet);
+
+  if (typeof window === 'undefined') {
+    return knownCompleted;
+  }
+
+  let localIds: string[] | null = null;
+  let localChecksumValid = false;
+  let sessionIds: string[] | null = null;
+
+  // 1. Read redundant session tier (isolated from localStorage clear)
+  try {
+    const rawSession = window.sessionStorage?.getItem(SESSION_LEDGER_KEY);
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession);
+      if (Array.isArray(parsed)) {
+        sessionIds = parsed;
+        sessionIds.forEach((id) => knownCompleted.add(id));
+      }
+    }
+  } catch {
+    // sessionStorage read failed
+  }
+
+  // 2. Read primary localStorage tier + verify integrity checksum
+  try {
+    const rawLocal = window.localStorage?.getItem(COMPLETED_SET_KEY);
+    const rawChecksum = window.localStorage?.getItem(INTEGRITY_LEDGER_KEY);
+
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (Array.isArray(parsed)) {
+        localIds = parsed;
+        const expectedChecksum = computeLedgerChecksum(parsed);
+        localChecksumValid = (rawChecksum === expectedChecksum);
+
+        if (localChecksumValid) {
+          parsed.forEach((id) => knownCompleted.add(id));
+        } else {
+          // MODIFICATION TAMPERING: Payload modified without valid checksum!
+          console.warn('[F-04 Stopgap] Modification tampering detected in localStorage! Restoring from secure session tier.');
         }
       }
+    }
+  } catch {
+    // localStorage read failed
+  }
+
+  // 3. Detect Deletion Tampering: localStorage was cleared, but sessionStorage / heap has records
+  const wasLocalStorageCleared = localIds === null && (sessionIds !== null && sessionIds.length > 0);
+  const wasTampered = !localChecksumValid && localIds !== null;
+
+  if (wasLocalStorageCleared || wasTampered) {
+    // Re-sync and restore integrity back to localStorage from validated session/memory
+    try {
+      const restoredList = [...knownCompleted];
+      const newChecksum = computeLedgerChecksum(restoredList);
+      window.localStorage?.setItem(COMPLETED_SET_KEY, JSON.stringify(restoredList));
+      window.localStorage?.setItem(INTEGRITY_LEDGER_KEY, newChecksum);
+      window.sessionStorage?.setItem(SESSION_LEDGER_KEY, JSON.stringify(restoredList));
     } catch {
-      // localStorage read failed
+      // Restore write failed
     }
   }
-  return inMemoryCompletedSet;
+
+  return knownCompleted;
 }
 
 export function recordChallengeCompleted(challengeId: string): void {
   const set = getCompletedChallenges();
   set.add(challengeId);
   inMemoryCompletedSet.add(challengeId);
-  if (typeof window !== 'undefined' && window.localStorage) {
+
+  if (typeof window !== 'undefined') {
+    const list = [...set];
+    const checksum = computeLedgerChecksum(list);
+
     try {
-      localStorage.setItem(COMPLETED_SET_KEY, JSON.stringify([...set]));
+      window.localStorage?.setItem(COMPLETED_SET_KEY, JSON.stringify(list));
+      window.localStorage?.setItem(INTEGRITY_LEDGER_KEY, checksum);
     } catch {
       // localStorage write failed
+    }
+
+    try {
+      window.sessionStorage?.setItem(SESSION_LEDGER_KEY, JSON.stringify(list));
+    } catch {
+      // sessionStorage write failed
     }
   }
 }
@@ -72,11 +160,11 @@ export function normalizeBackendStatus(status: string): SubmissionStatus {
       return 'ACCEPTED';
     case 'wrong_answer':
     case 'failed':
-      return 'FAILED';
+      return 'WRONG_ANSWER';
     case 'compilation_error':
       return 'COMPILATION_ERROR';
     case 'simulation_error':
-      return 'COMPILATION_ERROR';
+      return 'SIMULATION_ERROR';
     case 'evaluator_not_configured':
       return 'SYSTEM_ERROR';
     case 'timeout':
@@ -85,6 +173,8 @@ export function normalizeBackendStatus(status: string): SubmissionStatus {
       return 'RESOURCE_LIMIT';
     case 'system_error':
       return 'SYSTEM_ERROR';
+    case 'cancelled':
+      return 'CANCELLED';
     default:
       return 'QUEUED';
   }
@@ -102,6 +192,10 @@ export async function runEvaluator(challengeId: string, code: string): Promise<E
   });
 
   if (!res.ok) {
+    if (res.status === 413) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`SUBMISSION_TOO_LARGE: ${errData.message || 'Submission exceeds the 64 KB limit.'}`);
+    }
     throw new Error(`Evaluator endpoint returned HTTP status ${res.status}`);
   }
 
@@ -220,7 +314,7 @@ export const submissionApi = {
       );
 
       let xpEarned = 0;
-      let finalStatus: SubmissionStatus = 'FAILED';
+      let finalStatus: SubmissionStatus = 'WRONG_ANSWER';
 
       if (evalResult.status === 'ACCEPTED') {
         finalStatus = 'ACCEPTED';
@@ -237,7 +331,7 @@ export const submissionApi = {
       } else if (evalResult.status === 'EVALUATOR_NOT_CONFIGURED') {
         finalStatus = 'SYSTEM_ERROR';
       } else {
-        finalStatus = 'FAILED'; // Maps to WRONG_ANSWER in UI
+        finalStatus = 'WRONG_ANSWER';
       }
 
       return {
@@ -283,7 +377,7 @@ export const submissionApi = {
     try {
       const evalResult = await runEvaluator(challengeId, submittedCode);
 
-      let finalStatus: SubmissionStatus = 'FAILED';
+      let finalStatus: SubmissionStatus = 'WRONG_ANSWER';
       if (evalResult.status === 'ACCEPTED') {
         finalStatus = 'ACCEPTED';
       } else if (evalResult.status === 'COMPILATION_ERROR') {
@@ -291,7 +385,7 @@ export const submissionApi = {
       } else if (evalResult.status === 'EVALUATOR_NOT_CONFIGURED') {
         finalStatus = 'SYSTEM_ERROR';
       } else {
-        finalStatus = 'FAILED';
+        finalStatus = 'WRONG_ANSWER';
       }
 
       return {
@@ -339,6 +433,10 @@ export const submissionApi = {
     });
 
     if (!res.ok) {
+      if (res.status === 413) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(`SUBMISSION_TOO_LARGE: ${errData.message || 'Submission exceeds the 64 KB limit.'}`);
+      }
       throw new Error(`Matrix evaluation failed with HTTP ${res.status}`);
     }
 

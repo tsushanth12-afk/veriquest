@@ -176,60 +176,23 @@ fi
 
     def _execute_fallback(self, student_code: str, testbench: str) -> dict:
         """
-        Deterministic simulation engine fallback.
-        Validates Verilog syntax and truth-table equivalence for standard logic challenges.
+        Neutralized legacy fallback.
+        Per Master Architecture Specification Sections 10, 24, 37:
+        Simulation must never fake ACCEPTED, perform regex-based grading, or fabricate
+        test results. When Docker execution fails or is unreachable, the system must
+        strictly report SYSTEM_ERROR so infrastructure failure is never hidden or falsified.
         """
-        clean_code = student_code.strip()
-        
-        # Check basic syntax
-        if "module" not in clean_code or "endmodule" not in clean_code:
-            return {
-                "exit_code": 1,
-                "stdout": "VERIQUEST_STATUS: COMPILATION_ERROR\nError: Syntax error: missing module or endmodule declaration.",
-                "stderr": "Compilation failed",
-                "timed_out": False,
-            }
-
-        # Check for 2-input AND gate demo logic
-        if "and_gate" in clean_code:
-            # Check if student implements AND logic correctly: 'assign y = a & b' or 'y = b & a'
-            is_and_correct = bool(re.search(r"assign\s+y\s*=\s*(a\s*&\s*b|b\s*&\s*a)\s*;", clean_code))
-            
-            if is_and_correct:
-                stdout = (
-                    "TEST CASE PASS: a=0 b=0 -> y=0 (expected 0)\n"
-                    "TEST CASE PASS: a=0 b=1 -> y=0 (expected 0)\n"
-                    "TEST CASE PASS: a=1 b=0 -> y=0 (expected 0)\n"
-                    "TEST CASE PASS: a=1 b=1 -> y=1 (expected 1)\n"
-                    "--- SUMMARY ---\n"
-                    "TOTAL: 4\n"
-                    "PASSED: 4\n"
-                    "FAILED: 0\n"
-                    "VERIQUEST_STATUS: ACCEPTED\n"
-                )
-                return {"exit_code": 0, "stdout": stdout, "stderr": "", "timed_out": False}
-            else:
-                stdout = (
-                    "TEST CASE PASS: a=0 b=0 -> y=0 (expected 0)\n"
-                    "TEST CASE FAIL: a=1 b=1 -> y=0 (expected 1)\n"
-                    "--- SUMMARY ---\n"
-                    "TOTAL: 4\n"
-                    "PASSED: 1\n"
-                    "FAILED: 3\n"
-                    "VERIQUEST_STATUS: WRONG_ANSWER\n"
-                )
-                return {"exit_code": 1, "stdout": stdout, "stderr": "", "timed_out": False}
-
-        # Generic module validation
+        logger.error("Docker execution unavailable. Refusing fake evaluation or regex grading.")
         return {
-            "exit_code": 0,
+            "exit_code": 1,
             "stdout": (
                 "--- SUMMARY ---\n"
-                "TOTAL: 1\n"
-                "PASSED: 1\n"
+                "TOTAL: 0\n"
+                "PASSED: 0\n"
                 "FAILED: 0\n"
-                "VERIQUEST_STATUS: ACCEPTED\n"
+                "VERIQUEST_STATUS: SYSTEM_ERROR\n"
+                "Error: Isolated Docker HDL sandbox execution is unavailable on this host."
             ),
-            "stderr": "",
+            "stderr": "Docker sandbox daemon unavailable or execution failed",
             "timed_out": False,
         }

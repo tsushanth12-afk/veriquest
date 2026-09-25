@@ -6,13 +6,17 @@ export type SubmissionStatus =
   | 'IDLE'
   | 'QUEUED'
   | 'COMPILING'
+  | 'RUNNING'
   | 'RUNNING_TESTS'
   | 'ACCEPTED'
+  | 'WRONG_ANSWER'
   | 'FAILED'
   | 'COMPILATION_ERROR'
+  | 'SIMULATION_ERROR'
   | 'TIMEOUT'
   | 'RESOURCE_LIMIT'
-  | 'SYSTEM_ERROR';
+  | 'SYSTEM_ERROR'
+  | 'CANCELLED';
 
 export interface TestVectorSummary {
   vectorIndex: number;
@@ -40,7 +44,7 @@ export interface RecentSubmissionSummary {
   id: string;
   challengeId: string;
   challengeTitle: string;
-  status: 'ACCEPTED' | 'FAILED' | 'COMPILATION_ERROR';
+  status: 'ACCEPTED' | 'WRONG_ANSWER' | 'FAILED' | 'COMPILATION_ERROR';
   testsPassed: number;
   totalTests: number;
   xp: number;

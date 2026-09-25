@@ -13,8 +13,12 @@ from datetime import datetime, timezone
 
 from celery import Celery
 
-from .execution.sandbox import DockerSandbox
-from .execution.evaluator import parse_evaluation_result
+try:
+    from ..execution.sandbox import DockerSandbox
+    from ..execution.evaluator import parse_evaluation_result
+except (ImportError, ValueError):
+    from worker.execution.sandbox import DockerSandbox
+    from worker.execution.evaluator import parse_evaluation_result
 
 logger = logging.getLogger("veriquest.worker")
 

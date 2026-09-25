@@ -1,0 +1,326 @@
+[
+  {
+    "challenge": "and-gate-demo",
+    "testId": "A",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "B",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "C",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 2,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "D",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "E",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "F",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "G",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 2,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "H",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 3,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "and-gate-demo",
+    "testId": "I",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "A",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 8,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "B",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "C",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 4,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "D",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "E",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 8,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "F",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "G",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 4,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "H",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 4,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "mux-2to1",
+    "testId": "I",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 8,
+    "totalTests": 8,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "A",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 20,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "B",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "C",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "D",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "E",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 20,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "F",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "G",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "H",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 4,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "4-bit-counter",
+    "testId": "I",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 20,
+    "totalTests": 20,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "A",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "B",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "C",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 1,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "D",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "E",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "F",
+    "expected": "COMPILATION_ERROR",
+    "actual": "COMPILATION_ERROR",
+    "testsPassed": 0,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "G",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 3,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "H",
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "testsPassed": 2,
+    "totalTests": 4,
+    "passed": true
+  },
+  {
+    "challenge": "xor-gate",
+    "testId": "I",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED",
+    "testsPassed": 4,
+    "totalTests": 4,
+    "passed": true
+  }
+]

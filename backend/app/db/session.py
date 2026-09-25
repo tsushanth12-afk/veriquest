@@ -5,7 +5,7 @@
 import asyncpg
 import logging
 from contextlib import asynccontextmanager
-from .config import get_settings
+from ..core.config import get_settings
 
 logger = logging.getLogger("veriquest.db")
 

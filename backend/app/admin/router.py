@@ -331,16 +331,19 @@ async def validate_challenge(
             challenge_id,
         )
 
-        # Validate Verilog syntax & module consistency
-        is_valid = True
-        validation_msg = "Validation passed"
-
-        if "module" not in solution or "endmodule" not in solution:
+        # Real validation requires executing the official solution against the hidden testbench
+        # to ensure it compiles and deterministically passes before marking validated.
+        try:
+            from worker.execution.sandbox import DockerSandbox
+            from worker.execution.evaluator import parse_evaluation_result
+            sandbox = DockerSandbox()
+            raw_result = sandbox.execute(student_code=solution, testbench=testbench)
+            eval_result = parse_evaluation_result(raw_result)
+            is_valid = (eval_result.get("status") == "accepted")
+            validation_msg = eval_result.get("public_message") or ("Validation passed" if is_valid else "Official solution failed testbench")
+        except Exception as e:
             is_valid = False
-            validation_msg = "Official solution missing module declaration or endmodule"
-        elif "module" not in testbench or "endmodule" not in testbench:
-            is_valid = False
-            validation_msg = "Hidden testbench missing module declaration or endmodule"
+            validation_msg = f"Validation execution engine error: {str(e)}"
 
         if is_valid:
             await conn.execute(
