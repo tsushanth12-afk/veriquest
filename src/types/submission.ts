@@ -10,9 +10,9 @@ export type SubmissionStatus =
   | 'RUNNING_TESTS'
   | 'ACCEPTED'
   | 'WRONG_ANSWER'
-  | 'FAILED'
   | 'COMPILATION_ERROR'
   | 'SIMULATION_ERROR'
+  | 'EVALUATOR_NOT_CONFIGURED'
   | 'TIMEOUT'
   | 'RESOURCE_LIMIT'
   | 'SYSTEM_ERROR'
@@ -44,7 +44,7 @@ export interface RecentSubmissionSummary {
   id: string;
   challengeId: string;
   challengeTitle: string;
-  status: 'ACCEPTED' | 'WRONG_ANSWER' | 'FAILED' | 'COMPILATION_ERROR';
+  status: 'ACCEPTED' | 'WRONG_ANSWER' | 'COMPILATION_ERROR' | 'EVALUATOR_NOT_CONFIGURED';
   testsPassed: number;
   totalTests: number;
   xp: number;

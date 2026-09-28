@@ -306,13 +306,13 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module and_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\nendmodule\n`,
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (OR gate)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module and_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a | b;\nendmodule\n`,
       },
       {
@@ -336,14 +336,14 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module and_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a & b;\nendmodule\n`,
         secondaryCode: `module and_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a | b;\nendmodule\n`,
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module and_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    /* assign y = a & b; */\n    assign y = 1'b0;\nendmodule\n`,
       },
       {
@@ -370,13 +370,13 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module mux_2to1 (\n    input  wire a,\n    input  wire b,\n    input  wire sel,\n    output wire y\n);\nendmodule\n`,
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (Inverted select)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module mux_2to1 (\n    input  wire a,\n    input  wire b,\n    input  wire sel,\n    output wire y\n);\n    assign y = sel ? a : b;\nendmodule\n`,
       },
       {
@@ -400,14 +400,14 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module mux_2to1 (\n    input  wire a,\n    input  wire b,\n    input  wire sel,\n    output wire y\n);\n    assign y = sel ? b : a;\nendmodule\n`,
         secondaryCode: `module mux_2to1 (\n    input  wire a,\n    input  wire b,\n    input  wire sel,\n    output wire y\n);\n    assign y = sel ? a : b;\nendmodule\n`,
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module mux_2to1 (\n    input  wire a,\n    input  wire b,\n    input  wire sel,\n    output wire y\n);\n    /* assign y = sel ? b : a; */\n    assign y = 1'b0;\nendmodule\n`,
       },
       {
@@ -434,13 +434,13 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module sync_counter_4bit (\n    input  wire       clk,\n    input  wire       rst_n,\n    input  wire       en,\n    output reg  [3:0] count\n);\nendmodule\n`,
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (Synchronous reset only)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module sync_counter_4bit (\n    input  wire       clk,\n    input  wire       rst_n,\n    input  wire       en,\n    output reg  [3:0] count\n);\n    always @(posedge clk) begin\n        if (!rst_n) count <= 4'b0000;\n        else count <= count + 1'b1;\n    end\nendmodule\n`,
       },
       {
@@ -464,14 +464,14 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module sync_counter_4bit (\n    input  wire       clk,\n    input  wire       rst_n,\n    input  wire       en,\n    output reg  [3:0] count\n);\n    always @(posedge clk or negedge rst_n) begin\n        if (!rst_n) count <= 4'b0000;\n        else if (en) count <= count + 1'b1;\n    end\nendmodule\n`,
         secondaryCode: `module sync_counter_4bit (\n    input  wire       clk,\n    input  wire       rst_n,\n    input  wire       en,\n    output reg  [3:0] count\n);\n    always @(posedge clk) begin\n        if (!rst_n) count <= 4'b0000;\n        else count <= count + 1'b1;\n    end\nendmodule\n`,
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module sync_counter_4bit (\n    input  wire       clk,\n    input  wire       rst_n,\n    input  wire       en,\n    output reg  [3:0] count\n);\n    /* count <= count + 1; */\n    always @(posedge clk) count <= 4'b0000;\nendmodule\n`,
       },
       {
@@ -498,13 +498,13 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module xor_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\nendmodule\n`,
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (AND gate instead of XOR)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module xor_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a & b;\nendmodule\n`,
       },
       {
@@ -528,14 +528,14 @@ export const TESTBENCH_CATALOG: Record<string, ChallengeTestbenchConfig> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (OR gate replacement)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module xor_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a ^ b;\nendmodule\n`,
         secondaryCode: `module xor_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    assign y = a | b;\nendmodule\n`,
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Commented XOR, actual 0)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         code: `module xor_gate (\n    input  wire a,\n    input  wire b,\n    output wire y\n);\n    /* assign y = a ^ b; */\n    assign y = 1'b0;\nendmodule\n`,
       },
       {

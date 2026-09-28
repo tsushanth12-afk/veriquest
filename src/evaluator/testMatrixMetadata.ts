@@ -15,7 +15,7 @@
 export interface TestCaseMetadata {
   id: string; // 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I'
   title: string;
-  expectedStatus: string; // 'ACCEPTED' | 'FAILED' | 'COMPILATION_ERROR'
+  expectedStatus: string; // 'ACCEPTED' | 'WRONG_ANSWER' | 'COMPILATION_ERROR'
   description?: string;
 }
 
@@ -39,13 +39,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests floating output / undriven wire detection.',
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (OR gate)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests functional simulation vector mismatch on test cases 2 and 3.',
       },
       {
@@ -69,13 +69,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Verifies sequential cache invalidation and fresh compile execution.',
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Ensures commented-out code cannot trick AST or evaluation pipeline.',
       },
       {
@@ -99,13 +99,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests detection of missing routing logic.',
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (Inverted select)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests inverted select channel routing failure.',
       },
       {
@@ -129,13 +129,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests cache invalidation on modified multiplexer submissions.',
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Prevents bypasses using comments containing ternary expressions.',
       },
       {
@@ -159,13 +159,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests floating register output detection.',
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (Synchronous reset only)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests sensitivity list async reset trigger requirement.',
       },
       {
@@ -189,13 +189,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (Cache Invalidation)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests state reset and cache invalidation.',
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Old Regex Bug Check)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests sequential comment bypass rejection.',
       },
       {
@@ -219,13 +219,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'B',
         title: 'Required Logic Removed (Empty Body)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests missing logic detection.',
       },
       {
         id: 'C',
         title: 'Logic Changed Incorrectly (AND gate instead of XOR)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests wrong truth table output vectors.',
       },
       {
@@ -249,13 +249,13 @@ export const TEST_MATRIX_METADATA: Record<string, ChallengeMatrixMetadata> = {
       {
         id: 'G',
         title: 'Submit Correct then Broken (OR gate replacement)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests cache invalidation on gate re-evaluation.',
       },
       {
         id: 'H',
         title: 'Comment-Only Trick (Commented XOR, actual 0)',
-        expectedStatus: 'FAILED',
+        expectedStatus: 'WRONG_ANSWER',
         description: 'Tests comment bypass prevention.',
       },
       {

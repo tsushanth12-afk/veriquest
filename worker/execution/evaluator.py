@@ -118,7 +118,22 @@ def parse_evaluation_result(execution_result: dict) -> dict:
             "counts_as_attempt": True,
         }
 
-    # 7. Fallback unknown status -> SYSTEM_ERROR
+    # 7. Evaluator Not Configured
+    if vq_status == "EVALUATOR_NOT_CONFIGURED":
+        return {
+            "status": "evaluator_not_configured",
+            "tests_total": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "runtime_ms": 0,
+            "simulation_ns": 0,
+            "error_code": "EVALUATOR_NOT_CONFIGURED",
+            "public_message": "No testbench is configured for this challenge. 0 attempt penalty.",
+            "compiler_output": _sanitize_output(stdout[:1000]),
+            "counts_as_attempt": False,
+        }
+
+    # 8. Fallback unknown status -> SYSTEM_ERROR
     return {
         "status": "system_error",
         "tests_total": 0,

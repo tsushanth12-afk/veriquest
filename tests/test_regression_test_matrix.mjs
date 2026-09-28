@@ -13,13 +13,13 @@ const TEST_CASES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
 
 const EXPECTED_STATUSES = {
   A: 'ACCEPTED',
-  B: 'FAILED',
-  C: 'FAILED',
+  B: 'WRONG_ANSWER',
+  C: 'WRONG_ANSWER',
   D: 'COMPILATION_ERROR',
   E: 'ACCEPTED',
   F: 'COMPILATION_ERROR',
-  G: 'FAILED',
-  H: 'FAILED',
+  G: 'WRONG_ANSWER',
+  H: 'WRONG_ANSWER',
   I: 'ACCEPTED',
 };
 

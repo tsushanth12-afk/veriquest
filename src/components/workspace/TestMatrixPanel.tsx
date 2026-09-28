@@ -75,10 +75,7 @@ export const TestMatrixPanel: React.FC<TestMatrixPanelProps> = ({
     const res = await submissionApi.runTestMatrixCase(challengeSlug, test.id);
     onSetResult(res);
 
-    const statusMatches =
-      res.status === test.expectedStatus ||
-      (test.expectedStatus === 'FAILED' && res.status === 'WRONG_ANSWER') ||
-      (test.expectedStatus === 'WRONG_ANSWER' && res.status === 'FAILED');
+    const statusMatches = res.status === test.expectedStatus;
     let isPass = statusMatches;
     if (test.id === 'I') {
       // For Test I, must be ACCEPTED AND xpEarned must be 0

@@ -185,9 +185,9 @@ export const WorkspaceView: React.FC = () => {
         const terminalStatuses: SubmissionStatus[] = [
           'ACCEPTED',
           'WRONG_ANSWER',
-          'FAILED',
           'COMPILATION_ERROR',
           'SIMULATION_ERROR',
+          'EVALUATOR_NOT_CONFIGURED',
           'TIMEOUT',
           'RESOURCE_LIMIT',
           'SYSTEM_ERROR',
@@ -384,7 +384,7 @@ export const WorkspaceView: React.FC = () => {
                 color:
                   submissionStatus === 'ACCEPTED'
                     ? 'var(--status-success)'
-                    : submissionStatus === 'FAILED' || submissionStatus === 'COMPILATION_ERROR'
+                    : submissionStatus === 'WRONG_ANSWER' || submissionStatus === 'COMPILATION_ERROR'
                     ? 'var(--status-error)'
                     : 'var(--accent)',
               }}

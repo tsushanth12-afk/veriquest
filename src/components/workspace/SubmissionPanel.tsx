@@ -387,7 +387,7 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
             )}
 
             {/* Failed State / Wrong Answer */}
-            {result && (result.status === 'WRONG_ANSWER' || result.status === 'FAILED') && (
+            {result && result.status === 'WRONG_ANSWER' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div
                   className="neu-card"
@@ -612,6 +612,54 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Evaluator Not Configured */}
+            {result && result.status === 'EVALUATOR_NOT_CONFIGURED' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div
+                  className="neu-card"
+                  style={{
+                    padding: '14px',
+                    backgroundColor: 'var(--surface)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}
+                >
+                  <AlertTriangle size={22} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        color: 'var(--accent)',
+                      }}
+                    >
+                      ⚠ EVALUATOR NOT CONFIGURED
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      This challenge has no grader yet (not a problem with your code). 0 attempt penalty.
+                    </div>
+                  </div>
+                </div>
+                {result.compilerOutput && (
+                  <div className="neu-inset" style={{ padding: '12px', marginTop: '4px' }}>
+                    <pre
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        whiteSpace: 'pre-wrap',
+                        margin: 0,
+                      }}
+                    >
+                      {result.compilerOutput}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
           </>

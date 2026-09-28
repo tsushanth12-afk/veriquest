@@ -16,8 +16,8 @@ import { getTestbenchConfig } from './testbenchCatalog.ts';
 export type EvaluatorStatus =
   | 'ACCEPTED'
   | 'WRONG_ANSWER'
-  | 'FAILED'
   | 'COMPILATION_ERROR'
+  | 'SIMULATION_ERROR'
   | 'EVALUATOR_NOT_CONFIGURED'
   | 'SYSTEM_ERROR';
 
@@ -185,7 +185,7 @@ export async function evaluate(
     };
 
     return {
-      status: 'FAILED',
+      status: 'WRONG_ANSWER',
       success: false,
       testsPassed: finalPassed,
       totalTests,

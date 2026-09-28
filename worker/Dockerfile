@@ -11,10 +11,15 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir celery redis asyncpg docker
+# Install worker dependencies (including closure for shared gamification logic)
+COPY worker/requirements.txt ./worker/requirements.txt
+RUN pip install --no-cache-dir -r ./worker/requirements.txt
 
-COPY . .
+# Copy worker and backend packages
+COPY worker ./worker
+COPY backend ./backend
 
-# Mount Docker socket from host
-CMD ["celery", "-A", "tasks.hdl_task.celery_app", "worker", "--loglevel=info", "-Q", "hdl_execution"]
+ENV PYTHONPATH=/app
+
+# Start Celery worker using canonical package path
+CMD ["celery", "-A", "worker.tasks.hdl_task.celery_app", "worker", "--loglevel=info", "-Q", "hdl_execution"]

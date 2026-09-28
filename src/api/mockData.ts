@@ -624,7 +624,7 @@ export const MOCK_SUBMISSIONS: RecentSubmissionSummary[] = [
     id: 'sub-03',
     challengeId: 'ch-comb-priority-8to3',
     challengeTitle: 'Priority Encoder 8-to-3',
-    status: 'FAILED',
+    status: 'WRONG_ANSWER',
     testsPassed: 15,
     totalTests: 20,
     xp: 0,

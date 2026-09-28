@@ -13,12 +13,8 @@ from datetime import datetime, timezone
 
 from celery import Celery
 
-try:
-    from ..execution.sandbox import DockerSandbox
-    from ..execution.evaluator import parse_evaluation_result
-except (ImportError, ValueError):
-    from worker.execution.sandbox import DockerSandbox
-    from worker.execution.evaluator import parse_evaluation_result
+from worker.execution.sandbox import DockerSandbox
+from worker.execution.evaluator import parse_evaluation_result
 
 logger = logging.getLogger("veriquest.worker")
 
@@ -141,20 +137,12 @@ async def _execute_hdl_submission(submission_id: str):
 
             # 7. Gamification & Attempt Tracking (Section 3 & Section 7)
             if status == "accepted":
-                try:
-                    from app.gamification.xp import (
-                        award_xp,
-                        update_streak,
-                        check_quest_completion,
-                        check_badge_awards,
-                    )
-                except ImportError:
-                    from backend.app.gamification.xp import (
-                        award_xp,
-                        update_streak,
-                        check_quest_completion,
-                        check_badge_awards,
-                    )
+                from backend.app.gamification.xp import (
+                    award_xp,
+                    update_streak,
+                    check_quest_completion,
+                    check_badge_awards,
+                )
 
                 async with conn.transaction():
                     xp_result = await award_xp(
@@ -194,9 +182,11 @@ async def _execute_hdl_submission(submission_id: str):
                     submission["user_id"],
                 )
                 logger.info(f"Submission {submission_id}: {status} (attempt recorded)")
+            elif status in ["evaluator_not_configured", "system_error", "resource_limit", "cancelled"]:
+                # Infrastructure/configuration condition: 0 attempt penalty assessed
+                logger.warning(f"Submission {submission_id}: {status} — 0 attempt penalty assessed.")
             else:
-                # Section 7 Rule: SYSTEM_ERROR does NOT count as a wrong-answer attempt against student
-                logger.warning(f"Submission {submission_id}: SYSTEM_ERROR — 0 attempt penalty assessed.")
+                logger.warning(f"Submission {submission_id}: {status} — 0 attempt penalty assessed.")
 
     except Exception as e:
         logger.exception(f"Worker error for submission {submission_id}: {e}")

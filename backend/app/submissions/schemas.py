@@ -16,6 +16,7 @@ class SubmissionStatus(str, Enum):
     WRONG_ANSWER = "wrong_answer"
     COMPILATION_ERROR = "compilation_error"
     SIMULATION_ERROR = "simulation_error"
+    EVALUATOR_NOT_CONFIGURED = "evaluator_not_configured"
     TIMEOUT = "timeout"
     RESOURCE_LIMIT = "resource_limit"
     SYSTEM_ERROR = "system_error"
@@ -27,6 +28,7 @@ TERMINAL_STATUSES = {
     SubmissionStatus.WRONG_ANSWER,
     SubmissionStatus.COMPILATION_ERROR,
     SubmissionStatus.SIMULATION_ERROR,
+    SubmissionStatus.EVALUATOR_NOT_CONFIGURED,
     SubmissionStatus.TIMEOUT,
     SubmissionStatus.RESOURCE_LIMIT,
     SubmissionStatus.SYSTEM_ERROR,

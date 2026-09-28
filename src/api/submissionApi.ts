@@ -159,14 +159,13 @@ export function normalizeBackendStatus(status: string): SubmissionStatus {
     case 'accepted':
       return 'ACCEPTED';
     case 'wrong_answer':
-    case 'failed':
       return 'WRONG_ANSWER';
     case 'compilation_error':
       return 'COMPILATION_ERROR';
     case 'simulation_error':
       return 'SIMULATION_ERROR';
     case 'evaluator_not_configured':
-      return 'SYSTEM_ERROR';
+      return 'EVALUATOR_NOT_CONFIGURED';
     case 'timeout':
       return 'TIMEOUT';
     case 'resource_limit':
@@ -176,7 +175,8 @@ export function normalizeBackendStatus(status: string): SubmissionStatus {
     case 'cancelled':
       return 'CANCELLED';
     default:
-      return 'QUEUED';
+      console.warn(`[submissionApi] Unknown submission status received: "${status}". Resolving to SYSTEM_ERROR per fail-closed contract.`);
+      return 'SYSTEM_ERROR';
   }
 }
 
@@ -328,10 +328,15 @@ export const submissionApi = {
         }
       } else if (evalResult.status === 'COMPILATION_ERROR') {
         finalStatus = 'COMPILATION_ERROR';
+      } else if (evalResult.status === 'SIMULATION_ERROR') {
+        finalStatus = 'SIMULATION_ERROR';
       } else if (evalResult.status === 'EVALUATOR_NOT_CONFIGURED') {
-        finalStatus = 'SYSTEM_ERROR';
-      } else {
+        finalStatus = 'EVALUATOR_NOT_CONFIGURED';
+        xpEarned = 0;
+      } else if (evalResult.status === 'WRONG_ANSWER') {
         finalStatus = 'WRONG_ANSWER';
+      } else {
+        finalStatus = 'SYSTEM_ERROR';
       }
 
       return {
@@ -382,10 +387,14 @@ export const submissionApi = {
         finalStatus = 'ACCEPTED';
       } else if (evalResult.status === 'COMPILATION_ERROR') {
         finalStatus = 'COMPILATION_ERROR';
+      } else if (evalResult.status === 'SIMULATION_ERROR') {
+        finalStatus = 'SIMULATION_ERROR';
       } else if (evalResult.status === 'EVALUATOR_NOT_CONFIGURED') {
-        finalStatus = 'SYSTEM_ERROR';
-      } else {
+        finalStatus = 'EVALUATOR_NOT_CONFIGURED';
+      } else if (evalResult.status === 'WRONG_ANSWER') {
         finalStatus = 'WRONG_ANSWER';
+      } else {
+        finalStatus = 'SYSTEM_ERROR';
       }
 
       return {
