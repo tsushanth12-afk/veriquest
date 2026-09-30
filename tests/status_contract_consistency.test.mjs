@@ -142,6 +142,9 @@ runTest('CONTRACT-06', 'Exhaustive scan: No status-position FAILED / failed in s
   // 4. UI card sub-heading label in SubmissionPanel.tsx ("FAILED TESTCASE #...")
   // 5. Frozen mockData.ts (line 627) preserved per explicit user audit instruction
   const ALLOW_LIST = [
+    // Reserved HDL counter name, not a status value.
+    { file: 'src/evaluator/verdictProtocol.ts', pattern: /reserved\.has\('failed'\)/ },
+    { file: 'src/evaluator/verdictProtocol.ts', pattern: /\['passed', 'failed'\]\.every\(name/ },
     { file: 'src/evaluator/testbenchCatalog.ts', pattern: /\$display\("FAILED:\s*%0d"/ },
     { file: 'src/evaluator/testbenchCatalog.ts', pattern: /expectedStatus:\s*'FAILED'/ },
     { file: 'src/evaluator/evaluator.ts', pattern: /output\.match\(\/FAILED:\\s\*\(\\d\+\)\/\)/ },

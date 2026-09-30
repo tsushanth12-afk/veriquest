@@ -1,5 +1,6 @@
 import { evaluate } from '../src/evaluator/evaluator.ts';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 
 const challenges = [
   { id: 'and-gate-demo', module: 'and_gate', ports: 'input wire a, input wire b, output wire y' },
@@ -60,9 +61,13 @@ async function runTests() {
     }
   }
 
-  fs.mkdirSync('./scratch', { recursive: true });
-  fs.writeFileSync('./scratch/fix1_results.json', JSON.stringify(results, null, 2));
-  console.log(`Saved ${results.length} detailed test records to scratch/fix1_results.json`);
+  if (process.argv.includes('--write-report')) {
+    fs.mkdirSync('./scratch', { recursive: true });
+    fs.writeFileSync('./scratch/fix1_results.json', JSON.stringify(results, null, 2));
+  }
+  const failures = results.filter(result => !result.passed);
+  assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
+  console.log(`PASS: ${results.length} production evaluator error-classification cases.`);
 }
 
 runTests().catch(err => {

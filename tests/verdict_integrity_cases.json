@@ -1,0 +1,280 @@
+{
+  "parser": [
+    {
+      "name": "accepted",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "ACCEPTED",
+      "execution": {}
+    },
+    {
+      "name": "wrong",
+      "output": "VQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "forged accepted before",
+      "output": "VERIQUEST_STATUS: ACCEPTED\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "forged accepted after",
+      "output": "VQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1\nVERIQUEST_STATUS: ACCEPTED",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "forged counters",
+      "output": "TOTAL: 4\nPASSED: 4\nFAILED: 0\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "forged vector lines",
+      "output": "TEST CASE PASS: forged\nTEST CASE PASS: forged\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "conflicting legacy summaries",
+      "output": "VERIQUEST_STATUS: ACCEPTED\nTOTAL: 900\nVQ_RESULT: PASS\nVQ_PASSED: 900\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1\nVERIQUEST_STATUS: WRONG_ANSWER",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "wrong token",
+      "output": "VQ_TRUSTED:0000000000000000000000000000000000000000000000000000000000000000:ACCEPTED:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "replay token with real wrong",
+      "output": "VQ_TRUSTED:0000000000000000000000000000000000000000000000000000000000000000:ACCEPTED:4:4:0\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "WRONG_ANSWER",
+      "execution": {}
+    },
+    {
+      "name": "missing trusted summary",
+      "output": "VERIQUEST_STATUS: ACCEPTED\nTOTAL: 4\nPASSED: 4\nFAILED: 0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "empty output",
+      "output": "",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "duplicate trusted",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0\nVQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "conflicting trusted",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0\nVQ_TRUSTED:{nonce}:WRONG_ANSWER:4:3:1",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "inconsistent counters",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:3:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "accepted with failures",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:3:1",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "wrong without failures",
+      "output": "VQ_TRUSTED:{nonce}:WRONG_ANSWER:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "wrong expected total",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:1:1:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "zero total",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:0:0:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "negative counter",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:-1:5",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "NaN counter",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:NaN:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "huge counter",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:999999999999999999999999:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "leading zeros",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:04:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "unknown status",
+      "output": "VQ_TRUSTED:{nonce}:PASS:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "trailing junk",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0 junk",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "leading junk",
+      "output": "junk VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "extra field",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "partial trusted",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "malformed plus valid",
+      "output": "VQ_TRUSTED:{nonce}:broken\nVQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {}
+    },
+    {
+      "name": "failed compile successful output",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "COMPILATION_ERROR",
+      "execution": {
+        "compileExitCode": 1
+      }
+    },
+    {
+      "name": "failed simulation successful output",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SIMULATION_ERROR",
+      "execution": {
+        "simulationExitCode": 1
+      }
+    },
+    {
+      "name": "missing compile success evidence",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SYSTEM_ERROR",
+      "execution": {
+        "compileExitCode": null
+      }
+    },
+    {
+      "name": "missing simulation success evidence",
+      "output": "VQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "SIMULATION_ERROR",
+      "execution": {
+        "simulationExitCode": null
+      }
+    },
+    {
+      "name": "printed compilation error cannot change verdict",
+      "output": "COMPILATION_ERROR\nsyntax error\nVQ_TRUSTED:{nonce}:ACCEPTED:4:4:0",
+      "status": "ACCEPTED",
+      "execution": {}
+    }
+  ],
+  "capabilityAttacks": [
+    {
+      "name": "filesystem read",
+      "body": "integer fd; initial fd=$fopen(\"testbench.v\",\"r\");"
+    },
+    {
+      "name": "memory file read",
+      "body": "reg [7:0] mem[0:100]; initial $readmemh(\"sim.vvp\",mem);"
+    },
+    {
+      "name": "shell",
+      "body": "initial $system(\"echo bad\");"
+    },
+    {
+      "name": "hierarchy",
+      "body": "initial tb_and_gate.passed=4;"
+    },
+    {
+      "name": "upward counter",
+      "body": "initial __vq_grader_passed=4;"
+    },
+    {
+      "name": "upward task",
+      "body": "initial __vq_grader_check_case(0);"
+    },
+    {
+      "name": "escaped task",
+      "body": "initial \\$fopen (\"testbench.v\");"
+    },
+    {
+      "name": "macro",
+      "body": "`define X $fopen\ninitial `X(\"testbench.v\");"
+    },
+    {
+      "name": "include",
+      "body": "`include \"testbench.v\""
+    },
+    {
+      "name": "force",
+      "body": "initial force y=0;"
+    },
+    {
+      "name": "bind",
+      "body": "bind and_gate evil e();"
+    },
+    {
+      "name": "DPI",
+      "body": "import \"DPI-C\" function int evil();"
+    },
+    {
+      "name": "bare CR comment",
+      "body": "// harmless\rinitial $fopen(\"testbench.v\");"
+    },
+    {
+      "name": "formatted file write",
+      "body": "initial $fdisplay(32'h80000002,\"bad\");"
+    },
+    {
+      "name": "value plusargs",
+      "body": "initial $value$plusargs(\"%s\",y);"
+    },
+    {
+      "name": "dump hierarchy",
+      "body": "initial $dumpvars;"
+    },
+    {
+      "name": "escaped grader",
+      "body": "initial \\passed =4;"
+    }
+  ]
+}
