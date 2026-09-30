@@ -4,14 +4,17 @@
    ========================================================================== */
 
 import { Quest, Badge, LeaderboardEntry } from '../types/quest';
+import { sessionSnapshot, isCurrentSession } from './sessionBoundary';
 import { api } from './client';
-import { MOCK_QUESTS, MOCK_BADGES, MOCK_LEADERBOARD } from './mockData';
+import { MOCK_QUESTS, MOCK_LEADERBOARD } from './mockData';
 
 export const questApi = {
   async getQuests(): Promise<Quest[]> {
+    const snapshot = sessionSnapshot();
     try {
       const { data, error } = await api.quests.getQuests();
-      if (data && !error && data.quests && data.quests.length > 0) {
+      if (!isCurrentSession(snapshot)) return [];
+      if (data && !error && data.quests) {
         return data.quests.map((q: any) => ({
           id: q.id,
           title: q.title,
@@ -29,20 +32,22 @@ export const questApi = {
       // Backend offline — proceed to fallback
     }
 
-    return MOCK_QUESTS;
+    return [];
   },
 
   async getCurrentQuest(): Promise<Quest> {
     const quests = await this.getQuests();
-    return quests[0] || MOCK_QUESTS[0];
+    return quests[0] || { ...MOCK_QUESTS[0], status: 'LOCKED', progressPercent: 0, completedChallenges: 0, title: 'No server quest available' };
   },
 };
 
 export const badgeApi = {
   async getBadges(): Promise<Badge[]> {
+    const snapshot = sessionSnapshot();
     try {
       const { data, error } = await api.badges.getBadges();
-      if (data && !error && data.badges && data.badges.length > 0) {
+      if (!isCurrentSession(snapshot)) return [];
+      if (data && !error && data.badges) {
         return data.badges.map((b: any) => ({
           id: b.id,
           name: b.name,
@@ -58,15 +63,17 @@ export const badgeApi = {
       // Backend offline — proceed to fallback
     }
 
-    return MOCK_BADGES;
+    return [];
   },
 };
 
 export const leaderboardApi = {
   async getLeaderboard(tab: 'global' | 'weekly' | 'monthly' = 'global'): Promise<LeaderboardEntry[]> {
+    const snapshot = sessionSnapshot();
     try {
       const { data, error } = await api.leaderboard.getLeaderboard(tab);
-      if (data && !error && data.entries && data.entries.length > 0) {
+      if (!isCurrentSession(snapshot)) return [];
+      if (data && !error && data.entries) {
         return data.entries.map((e: any) => ({
           rank: Number(e.rank),
           userId: e.user_id || e.userId,
@@ -81,6 +88,7 @@ export const leaderboardApi = {
       // Backend offline — proceed to fallback
     }
 
+    if (!isCurrentSession(snapshot) || snapshot.identity) return [];
     if (tab === 'weekly') {
       return MOCK_LEADERBOARD.map((entry, i) => ({
         ...entry,

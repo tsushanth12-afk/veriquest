@@ -168,7 +168,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             onClick={onRun}
             disabled={isExecuting}
             className="neu-btn"
-            title="Run against public testcase vectors (non-scoring)"
+            title="Local WASM practice: zero XP and no scored completion"
             style={{
               padding: '4px 12px',
               height: '28px',

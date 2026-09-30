@@ -6,11 +6,11 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Flame, Medal, TrendingUp } from 'lucide-react';
-import { MOCK_BADGES } from '../../api/mockData';
 
 export const ActivityCard: React.FC = () => {
   const { user, setCurrentRoute } = useApp();
-  const unlockedBadges = MOCK_BADGES.filter((b) => b.unlocked).slice(0, 3);
+  const badges = user.badges ?? [];
+  const unlockedBadges = badges.filter((b) => b.unlocked);
 
   // Compute activity grid from real user streak
   const streak = user.stats.currentStreak;
@@ -155,7 +155,7 @@ export const ActivityCard: React.FC = () => {
               RANKING
             </div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
-              Rank #{user.stats.globalRank || 1}
+              {user.stats.globalRank > 0 ? `Rank #${user.stats.globalRank}` : 'Rank unavailable'}
             </div>
           </div>
         </div>
@@ -179,7 +179,7 @@ export const ActivityCard: React.FC = () => {
                 BADGES
               </div>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
-                {unlockedBadges.length} / {MOCK_BADGES.length} Unlocked
+                {user.badges ? `${unlockedBadges.length} earned` : 'Server badges unavailable'}
               </div>
             </div>
           </div>

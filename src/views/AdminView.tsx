@@ -6,7 +6,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { api, AuditLogEntry } from '../api/client';
-import { MOCK_CHALLENGES } from '../api/mockData';
+import { requireApiData } from '../api/requireApiData';
+import { sessionSnapshot, requireCurrentSession } from '../api/sessionBoundary';
 import {
   Plus,
   X,
@@ -34,45 +35,8 @@ interface AdminChallenge {
   created_at: string;
 }
 
-const FALLBACK_CHALLENGES: AdminChallenge[] = MOCK_CHALLENGES.map((c) => ({
-  id: c.id,
-  slug: c.slug,
-  title: c.title,
-  category: c.category,
-  difficulty: c.difficulty,
-  level_number: c.level,
-  xp_reward: c.xp,
-  is_published: true,
-  is_archived: false,
-  validation_status: 'published',
-  created_at: '2026-09-23T00:00:00.000Z',
-}));
-
-const FALLBACK_AUDIT_LOGS: AuditLogEntry[] = [
-  {
-    id: 'log-001',
-    admin_user_id: 'usr_admin',
-    admin_username: 'Staff Admin',
-    action: 'publish_challenge',
-    target_type: 'challenge',
-    target_id: 'c0000000-0000-0000-0000-000000000001',
-    details: { challenge: 'and-gate-demo', status: 'published' },
-    created_at: '2026-09-23T05:00:00.000Z',
-  },
-  {
-    id: 'log-002',
-    admin_user_id: 'usr_admin',
-    admin_username: 'Staff Admin',
-    action: 'validate_challenge',
-    target_type: 'challenge',
-    target_id: 'c0000000-0000-0000-0000-000000000001',
-    details: { result: 'all_passed', vectors: 4 },
-    created_at: '2026-09-23T04:00:00.000Z',
-  },
-];
-
 export const AdminView: React.FC = () => {
-  const { addToast } = useApp();
+  const { addToast, isAdmin } = useApp();
   const [activeTab, setActiveTab] = useState<'challenges' | 'audit_log'>('challenges');
   const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -98,44 +62,34 @@ export const AdminView: React.FC = () => {
   });
 
   const loadChallenges = useCallback(async () => {
+    const snapshot = sessionSnapshot();
     setIsLoading(true);
     try {
-      const { data, error } = await api.admin.listChallenges();
-      if (data && !error && (data as unknown as { challenges: AdminChallenge[] }).challenges?.length) {
-        setChallenges((data as unknown as { challenges: AdminChallenge[] }).challenges);
-        setIsLoading(false);
-        return;
-      }
-    } catch {
-      // Backend offline
-    }
-    setChallenges((prev) => (prev.length > 0 ? prev : FALLBACK_CHALLENGES));
-    setIsLoading(false);
-  }, []);
-
+      const data = requireApiData(await api.admin.listChallenges<AdminChallenge>());
+      requireCurrentSession(snapshot);
+      setChallenges(data.challenges);
+    } catch (error) {
+      if (sessionSnapshot().generation === snapshot.generation)
+        addToast({ type: 'error', title: 'Admin load failed', description: String(error) });
+    } finally { if (sessionSnapshot().generation === snapshot.generation) setIsLoading(false); }
+  }, [addToast]);
   const loadAuditLog = useCallback(async () => {
+    const snapshot = sessionSnapshot();
     setIsLoading(true);
     try {
-      const { data, error } = await api.admin.getAuditLog();
-      if (data && !error && data.audit_logs && data.audit_logs.length) {
-        setAuditLogs(data.audit_logs);
-        setIsLoading(false);
-        return;
-      }
-    } catch {
-      // Backend offline
-    }
-    setAuditLogs((prev) => (prev.length > 0 ? prev : FALLBACK_AUDIT_LOGS));
-    setIsLoading(false);
-  }, []);
-
+      const data = requireApiData(await api.admin.getAuditLog());
+      requireCurrentSession(snapshot);
+      setAuditLogs(data.audit_logs);
+    } catch (error) {
+      if (sessionSnapshot().generation === snapshot.generation)
+        addToast({ type: 'error', title: 'Audit log failed', description: String(error) });
+    } finally { if (sessionSnapshot().generation === snapshot.generation) setIsLoading(false); }
+  }, [addToast]);
   useEffect(() => {
-    if (activeTab === 'challenges') {
-      loadChallenges();
-    } else {
-      loadAuditLog();
-    }
-  }, [activeTab, loadChallenges, loadAuditLog]);
+    if (!isAdmin) return;
+    if (activeTab === 'challenges') void loadChallenges();
+    else void loadAuditLog();
+  }, [isAdmin, activeTab, loadChallenges, loadAuditLog]);
 
   // Accessibility: Dismiss challenge authoring form on Escape key
   useEffect(() => {
@@ -169,10 +123,13 @@ export const AdminView: React.FC = () => {
   };
 
   const handleEditClick = async (ch: AdminChallenge) => {
+    if (!isAdmin) return;
+    const snapshot = sessionSnapshot();
     setEditingId(ch.id);
     setShowForm(true);
     try {
       const { data, error } = await api.admin.getChallenge<any>(ch.id);
+      requireCurrentSession(snapshot);
       if (data && !error) {
         setForm({
           slug: data.slug || ch.slug,
@@ -194,66 +151,45 @@ export const AdminView: React.FC = () => {
     } catch {
       // Backend offline
     }
-    const mock = MOCK_CHALLENGES.find((c) => c.id === ch.id || c.slug === ch.slug);
-    setForm({
-      slug: ch.slug,
-      title: ch.title,
-      description: mock?.description || '',
-      category: ch.category,
-      difficulty: ch.difficulty,
-      level_number: ch.level_number,
-      xp_reward: ch.xp_reward,
-      estimated_minutes: mock?.estimatedMinutes || 15,
-      starter_code: mock?.starterCode || '',
-      learning_objective: mock?.learningObjective || '',
-      official_solution: '',
-      hidden_testbench: '',
-      private_notes: '',
-    });
+    if (sessionSnapshot().generation !== snapshot.generation) return;
+    setShowForm(false);
+    setEditingId(null);
+    addToast({ type: 'error', title: 'Cannot load challenge', description: 'Backend details unavailable. No draft was fabricated.' });
   };
 
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (!isAdmin) return;
+    const snapshot = sessionSnapshot();
+    let createdId: string | undefined;
     try {
-      const { error } = await (editingId
+      const response = await (editingId
         ? api.admin.updateChallenge(editingId, form as unknown as Record<string, unknown>)
         : api.admin.createChallenge(form as unknown as Record<string, unknown>));
 
-      if (error && error.code !== 'NETWORK_ERROR') {
-        addToast({ type: 'error', title: 'Operation Failed', description: error.message });
-        return;
+      const data = requireApiData<unknown>(response);
+      requireCurrentSession(snapshot);
+      if (!editingId) {
+        createdId = (data as { challenge_id?: string }).challenge_id;
+        if (!createdId) throw new Error('SYSTEM_ERROR: Missing created challenge ID.');
       }
-    } catch {
-      // Fallback to local state
+    } catch (error) {
+      if (sessionSnapshot().generation === snapshot.generation)
+        addToast({ type: 'error', title: 'Operation Failed', description: String(error) });
+      return;
     }
 
     if (editingId) {
-      setChallenges((prev) =>
-        prev.map((c) =>
-          c.id === editingId
-            ? {
-                ...c,
-                title: form.title,
-                slug: form.slug,
-                category: form.category,
-                difficulty: form.difficulty,
-                level_number: form.level_number,
-                xp_reward: form.xp_reward,
-                validation_status: 'draft',
-                is_published: false,
-              }
-            : c
-        )
-      );
+      await loadChallenges();
+      if (sessionSnapshot().generation !== snapshot.generation) return;
       addToast({
         type: 'success',
-        title: 'Challenge Draft Updated',
-        description: 'Challenge updated to draft status. Run validation before publishing.',
+        title: 'Backend update completed',
+        description: 'Refresh persisted lifecycle state before publishing.',
       });
     } else {
       const newCh: AdminChallenge = {
-        id: `ch_${Date.now()}`,
+        id: createdId!,
         slug: form.slug || `challenge-${Date.now()}`,
         title: form.title,
         category: form.category,
@@ -278,74 +214,28 @@ export const AdminView: React.FC = () => {
     resetForm();
   };
 
-  const handleValidate = async (id: string) => {
-    addToast({
-      type: 'info',
-      title: 'Validation Queued',
-      description: 'Running official solution against hidden testbench in container sandbox...',
-    });
-
+  const lifecycle = async (id: string, action: 'validate' | 'publish' | 'unpublish') => {
+    const snapshot = sessionSnapshot();
+    if (!isAdmin) return;
     try {
-      const { error } = await api.admin.validateChallenge(id);
-      if (error && error.code !== 'NETWORK_ERROR') {
-        addToast({ type: 'error', title: 'Validation Failed', description: error.message });
-        return;
-      }
-    } catch {
-      // Fallback
+      const response = action === 'validate' ? await api.admin.validateChallenge(id)
+        : action === 'publish' ? await api.admin.publishChallenge(id)
+        : await api.admin.unpublishChallenge(id);
+      const data = requireApiData(response);
+      requireCurrentSession(snapshot);
+      if (!data.status) throw new Error('SYSTEM_ERROR: Missing lifecycle status.');
+      // Refresh actual persisted state; never manufacture lifecycle transitions.
+      await loadChallenges();
+      requireCurrentSession(snapshot);
+      addToast({ type: 'success', title: 'Backend operation completed', description: data.message || data.status });
+    } catch (error) {
+      if (sessionSnapshot().generation === snapshot.generation)
+        addToast({ type: 'error', title: 'Admin operation failed', description: String(error) });
     }
-
-    setChallenges((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, validation_status: 'validated' } : c))
-    );
-    addToast({
-      type: 'success',
-      title: 'Validation Succeeded',
-      description: 'Solution compiled cleanly and satisfied 100% of testbench assertions.',
-    });
   };
-
-  const handlePublish = async (id: string) => {
-    try {
-      const { error } = await api.admin.publishChallenge(id);
-      if (error && error.code !== 'NETWORK_ERROR') {
-        addToast({ type: 'error', title: 'Publish Failed', description: error.message });
-        return;
-      }
-    } catch {
-      // Fallback
-    }
-
-    setChallenges((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_published: true, validation_status: 'published' } : c))
-    );
-    addToast({
-      type: 'success',
-      title: 'Challenge Published',
-      description: 'Challenge is now live and accessible in the student catalog.',
-    });
-  };
-
-  const handleUnpublish = async (id: string) => {
-    try {
-      const { error } = await api.admin.unpublishChallenge(id);
-      if (error && error.code !== 'NETWORK_ERROR') {
-        addToast({ type: 'error', title: 'Unpublish Failed', description: error.message });
-        return;
-      }
-    } catch {
-      // Fallback
-    }
-
-    setChallenges((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_published: false, validation_status: 'draft' } : c))
-    );
-    addToast({
-      type: 'info',
-      title: 'Challenge Unpublished',
-      description: 'Challenge removed from student catalog (prior student progress retained).',
-    });
-  };
+  const handleValidate = (id: string) => lifecycle(id, 'validate');
+  const handlePublish = (id: string) => lifecycle(id, 'publish');
+  const handleUnpublish = (id: string) => lifecycle(id, 'unpublish');
 
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
@@ -374,6 +264,7 @@ export const AdminView: React.FC = () => {
     );
   };
 
+  if (!isAdmin) return <p>Administrator authorization required.</p>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header & Sub-Navigation */}

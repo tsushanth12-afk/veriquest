@@ -2,11 +2,12 @@
    VeriQuest Context — Global State, Routing, Auth & Theme
    ========================================================================== */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile } from '../types/user';
-import { MOCK_USER } from '../api/mockData';
+import { emptyProfile } from './profileState';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import { changeSessionIdentity, sessionSnapshot, isCurrentSession } from '../api/sessionBoundary';
 import { api } from '../api/client';
 
 export type PageRoute = 
@@ -54,7 +55,7 @@ interface AppContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
-  awardXP: (amount: number) => void;
+  sessionGeneration: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -64,7 +65,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeChallengeId, setActiveChallengeId] = useState<string>('and-gate-demo');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<UserProfile>(MOCK_USER);
+  const [user, setUser] = useState<UserProfile>(() => emptyProfile());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isAuthOpen, setAuthOpen] = useState(false);
 
@@ -74,76 +75,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [sessionGeneration, setSessionGeneration] = useState(0);
+  const identityRef = useRef<string | null>(null);
   const isAuthenticated = !!session;
 
   const loadProfile = useCallback(async (currentAuth?: User | null) => {
+    const snapshot = sessionSnapshot();
+    if (!currentAuth || snapshot.identity !== currentAuth.id) return;
     try {
       const { data, error } = await api.getProfile();
-      if (data && !error) {
+      if (isCurrentSession(snapshot) && data && !error && data.id === currentAuth.id) {
         setUser(data as unknown as UserProfile);
-        return;
       }
-    } catch {
-      // Profile API request failed or backend offline
-    }
-
-    // When authenticated but backend profile endpoint is pending,
-    // construct profile details from auth metadata instead of hardcoded mock user
-    if (currentAuth) {
-      const username =
-        currentAuth.user_metadata?.username ||
-        currentAuth.email?.split('@')[0] ||
-        'Student';
-      const fullName =
-        currentAuth.user_metadata?.display_name ||
-        currentAuth.user_metadata?.full_name ||
-        username;
-
-      setUser((prev) => ({
-        ...prev,
-        id: currentAuth.id,
-        username,
-        fullName,
-      }));
-    }
+    } catch { /* Keep this identity's empty profile, never another user's stats. */ }
   }, []);
 
-  // Initialize auth on mount
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    let active = true;
+    let authEventSeen = false;
+    const apply = (s: Session | null) => {
+      if (!active) return;
+      const id = s?.user.id ?? null;
+      if (identityRef.current !== id || sessionSnapshot().identity !== id) {
+        identityRef.current = id;
+        setSessionGeneration(changeSessionIdentity(id));
+        setUser(emptyProfile(s?.user));
+        setIsAdmin(false);
+        setToasts([]);
+        setSearchQuery('');
+        setActiveChallengeId('and-gate-demo');
+        setAuthOpen(false);
+        setCurrentRoute('dashboard');
+      }
       setSession(s);
-      setAuthUser(s?.user || null);
-      setIsAdmin(
-        s?.user?.app_metadata?.role === 'admin' ||
-        s?.user?.user_metadata?.role === 'admin' ||
-        false
-      );
+      setAuthUser(s?.user ?? null);
       setIsAuthLoading(false);
       if (s?.user) {
-        loadProfile(s.user);
-      }
+        void loadProfile(s.user);
+        const snapshot = sessionSnapshot();
+        // Backend list endpoint enforces the database role. Editable metadata is not authority.
+        void api.admin.listChallenges().then(({ data, error }) => {
+          if (active && isCurrentSession(snapshot)) setIsAdmin(!!data && !error);
+        }).catch(() => { if (active && isCurrentSession(snapshot)) setIsAdmin(false); });
+      } else setIsAdmin(false);
+    };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      authEventSeen = true;
+      apply(s);
     });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
-        setSession(s);
-        setAuthUser(s?.user || null);
-        setIsAdmin(
-          s?.user?.app_metadata?.role === 'admin' ||
-          s?.user?.user_metadata?.role === 'admin' ||
-          false
-        );
-        if (s?.user) {
-          loadProfile(s.user);
-        } else {
-          setUser(MOCK_USER);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!authEventSeen) apply(data.session);
+    }).catch(() => { if (!authEventSeen) apply(null); });
+    return () => { active = false; changeSessionIdentity(null); subscription.unsubscribe(); };
   }, [loadProfile]);
 
   useEffect(() => {
@@ -164,13 +147,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = `t_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     setToasts((prev) => [...prev, { ...toast, id }]);
     setTimeout(() => {
-      removeToast(id);
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
-  };
+  }, []);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -211,12 +194,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    setSessionGeneration(changeSessionIdentity(null));
+    identityRef.current = null;
+    setIsAdmin(false);
+    setToasts([]);
+    setSearchQuery('');
+    setActiveChallengeId('and-gate-demo');
+    setAuthOpen(false);
+    setUser(emptyProfile());
     setSession(null);
     setAuthUser(null);
-    setUser(MOCK_USER);
     setCurrentRoute('dashboard');
-    addToast({ type: 'info', title: 'Signed out' });
+    const snapshot = sessionSnapshot();
+    const { error } = await supabase.auth.signOut();
+    if (isCurrentSession(snapshot)) addToast({ type: error ? 'error' : 'info', title: error ? 'Sign-out failed' : 'Signed out' });
   };
 
   const resetPassword = async (email: string) => {
@@ -229,23 +220,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err: unknown) {
       return { success: false, error: 'Password reset failed' };
     }
-  };
-
-  const awardXP = (amount: number) => {
-    if (amount <= 0) return;
-    setUser((prev) => {
-      const updatedXP = prev.stats.currentXP + amount;
-      MOCK_USER.stats.currentXP = updatedXP;
-      MOCK_USER.stats.totalSolved = prev.stats.totalSolved + 1;
-      return {
-        ...prev,
-        stats: {
-          ...prev.stats,
-          currentXP: updatedXP,
-          totalSolved: prev.stats.totalSolved + 1,
-        },
-      };
-    });
   };
 
   return (
@@ -275,7 +249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         resetPassword,
         refreshProfile,
-        awardXP,
+        sessionGeneration,
       }}
     >
       {children}

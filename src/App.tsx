@@ -22,7 +22,7 @@ import { SettingsView } from './views/SettingsView';
 import { AdminView } from './views/AdminView';
 
 const AppContent: React.FC = () => {
-  const { currentRoute } = useApp();
+  const { currentRoute, sessionGeneration, isAdmin, isAuthenticated } = useApp();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const renderActiveView = () => {
@@ -46,7 +46,7 @@ const AppContent: React.FC = () => {
       case 'settings':
         return <SettingsView />;
       case 'admin':
-        return <AdminView />;
+        return isAdmin ? <AdminView /> : <p>Administrator authorization required.</p>;
       default:
         return <DashboardView />;
     }
@@ -64,14 +64,15 @@ const AppContent: React.FC = () => {
       <div className="app-main">
         <TopHeader onMobileToggle={() => setMobileMenuOpen(true)} />
 
-        <main className="page-container" style={{ padding: currentRoute === 'workspace' ? '12px 16px' : undefined }}>
+        <main key={sessionGeneration} className="page-container" style={{ padding: currentRoute === 'workspace' ? '12px 16px' : undefined }}>
+          {!isAuthenticated && <p role="note">Practice preview — sample catalog data, zero XP and no scored progress. Use Run to practice; sign in for backend Submit.</p>}
           {renderActiveView()}
         </main>
       </div>
 
       {/* Overlays */}
       <ToastContainer />
-      <AuthModal />
+      <AuthModal key={sessionGeneration} />
     </div>
   );
 };

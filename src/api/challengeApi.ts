@@ -3,6 +3,7 @@
    ========================================================================== */
 
 import { PublicChallenge, Difficulty, ChallengeCategory } from '../types/challenge';
+import { sessionSnapshot, isCurrentSession } from './sessionBoundary';
 import { api } from './client';
 import { MOCK_CHALLENGES } from './mockData';
 
@@ -47,6 +48,7 @@ export function normalizeChallenge(raw: any): PublicChallenge {
 
 export const challengeApi = {
   async getChallenges(filters?: ChallengeFilters): Promise<PublicChallenge[]> {
+    const snapshot = sessionSnapshot();
     try {
       const { data, error } = await api.challenges.getChallenges({
         search: filters?.search,
@@ -55,7 +57,8 @@ export const challengeApi = {
         status: filters?.status !== 'All' ? filters?.status : undefined,
       });
 
-      if (data && !error && data.challenges && data.challenges.length > 0) {
+      if (!isCurrentSession(snapshot)) return [];
+      if (data && !error && data.challenges) {
         return data.challenges.map(normalizeChallenge);
       }
     } catch {
@@ -63,7 +66,8 @@ export const challengeApi = {
     }
 
     // Local fallback for offline/development mode
-    let results = MOCK_CHALLENGES.map(normalizeChallenge);
+    if (!isCurrentSession(snapshot) || snapshot.identity) return [];
+    let results = MOCK_CHALLENGES.map(c => normalizeChallenge({ ...c, solved: false, attemptsCount: 0 }));
 
     if (filters?.search) {
       const q = filters.search.toLowerCase();
@@ -95,8 +99,10 @@ export const challengeApi = {
   },
 
   async getChallengeById(id: string): Promise<PublicChallenge | null> {
+    const snapshot = sessionSnapshot();
     try {
       const { data, error } = await api.challenges.getChallengeBySlug(id);
+      if (!isCurrentSession(snapshot)) return null;
       if (data && !error) {
         return normalizeChallenge(data);
       }
@@ -104,9 +110,10 @@ export const challengeApi = {
       // Backend offline or error — proceed to local fallback
     }
 
+    if (!isCurrentSession(snapshot) || snapshot.identity) return null;
     const found = MOCK_CHALLENGES.find(
       (c) => c.id === id || c.slug === id || (id === 'and-gate-demo' && c.slug === 'and-gate-demo')
     );
-    return found ? normalizeChallenge(found) : null;
+    return found ? normalizeChallenge({ ...found, solved: false, attemptsCount: 0 }) : null;
   },
 };

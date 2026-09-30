@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { challengeApi } from '../api/challengeApi';
+import { sessionSnapshot, isCurrentSession } from '../api/sessionBoundary';
 import { submissionApi } from '../api/submissionApi';
 import { PublicChallenge } from '../types/challenge';
 import { SubmissionStatus, SubmissionResult } from '../types/submission';
@@ -15,14 +16,15 @@ import { SubmissionPanel } from '../components/workspace/SubmissionPanel';
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 
 export const WorkspaceView: React.FC = () => {
-  const { activeChallengeId, setCurrentRoute, addToast, refreshProfile, awardXP } = useApp();
+  const { activeChallengeId, setCurrentRoute, addToast, refreshProfile, isAuthenticated, setAuthOpen } = useApp();
   const [challenge, setChallenge] = useState<PublicChallenge | null>(null);
   const [isLoadingChallenge, setIsLoadingChallenge] = useState(true);
   const [code, setCode] = useState<string>('');
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>('IDLE');
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const pollTimerRef = useRef<any>(null);
+  const operation = useRef(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -46,6 +48,8 @@ export const WorkspaceView: React.FC = () => {
 
     return () => {
       mounted = false;
+      operation.current++;
+      setIsExecuting(false);
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
       }
@@ -102,12 +106,14 @@ export const WorkspaceView: React.FC = () => {
 
   // Handle non-scoring local test vector execution ("Run")
   const handleRun = async () => {
+    const run = ++operation.current;
+    const snapshot = sessionSnapshot();
     setIsExecuting(true);
     setSubmissionStatus('RUNNING_TESTS');
     addToast({
       type: 'info',
-      title: 'Testing Sample Vectors',
-      description: 'Running local verification on visible test cases (non-scoring)...',
+      title: 'Unscored Local Practice',
+      description: 'Running local WASM verification. Zero XP; no scored completion.',
     });
 
     try {
@@ -116,14 +122,15 @@ export const WorkspaceView: React.FC = () => {
         code,
         challenge.examples || []
       );
+      if (run !== operation.current || !isCurrentSession(snapshot)) return;
       setSubmissionStatus(result.status);
       setSubmissionResult(result);
 
       if (result.status === 'ACCEPTED') {
         addToast({
           type: 'success',
-          title: 'Sample Vectors Passed!',
-          description: `${result.testsPassed}/${result.totalTests} sample test cases verified clean.`,
+          title: 'Practice Tests Passed!',
+          description: `${result.testsPassed}/${result.totalTests} practice test cases verified. No progress awarded.`,
         });
       } else if (result.status === 'COMPILATION_ERROR') {
         addToast({
@@ -139,107 +146,56 @@ export const WorkspaceView: React.FC = () => {
         });
       }
     } catch {
-      setSubmissionStatus('SYSTEM_ERROR');
+      if (run === operation.current && isCurrentSession(snapshot)) setSubmissionStatus('SYSTEM_ERROR');
     } finally {
-      setIsExecuting(false);
+      if (run === operation.current && isCurrentSession(snapshot)) setIsExecuting(false);
     }
   };
 
   // Handle authoritative remote verification ("Submit")
   const handleSubmit = async () => {
+    if (!isAuthenticated) {
+      setAuthOpen(true);
+      addToast({ type: 'info', title: 'Sign in for scored Submit', description: 'Run is unscored local practice: zero XP and no completion.' });
+      return;
+    }
+    const id = ++operation.current;
+    const snapshot = sessionSnapshot();
+    const current = () => id === operation.current && isCurrentSession(snapshot);
     setIsExecuting(true);
+    setSubmissionResult(null);
     setSubmissionStatus('QUEUED');
-    addToast({
-      type: 'info',
-      title: 'Dispatching to Verification Cluster',
-      description: 'Sending RTL module to backend sandbox for automated grading...',
-    });
-
-    try {
-      const { submissionId, isRemote } = await submissionApi.submitSolution(challenge.id, code);
-
-      const startTime = Date.now();
-      const maxWaitMs = 60000; // Strictly cap at 60s per Section 6
-
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-      }
-
-      pollTimerRef.current = setInterval(async () => {
-        // Enforce 60s hard polling cap
-        if (Date.now() - startTime >= maxWaitMs) {
-          clearInterval(pollTimerRef.current);
-          setIsExecuting(false);
-          setSubmissionStatus('TIMEOUT');
-          addToast({
-            type: 'warning',
-            title: 'Polling Timeout Cap Reached',
-            description: 'Simulation took longer than 60s. Check Submissions history later.',
-          });
-          return;
-        }
-
-        const res = await submissionApi.pollSubmissionStatus(submissionId, isRemote);
-        setSubmissionStatus(res.status);
-
-        const terminalStatuses: SubmissionStatus[] = [
-          'ACCEPTED',
-          'WRONG_ANSWER',
-          'COMPILATION_ERROR',
-          'SIMULATION_ERROR',
-          'EVALUATOR_NOT_CONFIGURED',
-          'TIMEOUT',
-          'RESOURCE_LIMIT',
-          'SYSTEM_ERROR',
-          'CANCELLED',
-        ];
-
-        if (terminalStatuses.includes(res.status)) {
-          clearInterval(pollTimerRef.current);
-          setIsExecuting(false);
-          setSubmissionResult(res);
-
-          if (res.status === 'ACCEPTED') {
-            const xp = res.xpEarned ?? 0;
-            if (xp > 0) {
-              awardXP(xp);
-              addToast({
-                type: 'success',
-                title: `Challenge Verified! +${xp} XP`,
-                description: 'Timing closure met. Server progress updated.',
-              });
-            } else {
-              addToast({
-                type: 'success',
-                title: `Challenge Verified! (+0 XP)`,
-                description: 'Already accepted in a previous submission. Zero XP awarded.',
-              });
-            }
-            refreshProfile();
-          } else if (res.status === 'COMPILATION_ERROR') {
-            addToast({
-              type: 'error',
-              title: 'Compilation Error',
-              description: 'Icarus Verilog syntax or synthesis diagnostics reported.',
-            });
-          } else {
-            addToast({
-              type: 'warning',
-              title: 'Simulation Mismatch Detected',
-              description: 'Assertion check failed against hidden testbench vectors.',
-            });
-          }
-        }
-      }, 500);
-    } catch {
+    const fail = (error: unknown) => {
+      if (!current()) return;
       setIsExecuting(false);
       setSubmissionStatus('SYSTEM_ERROR');
-      addToast({
-        type: 'error',
-        title: 'Submission Failed',
-        description: 'Unable to communicate with the verification runner.',
-      });
-    }
+      addToast({ type: 'error', title: 'Submission Failed', description: error instanceof Error ? error.message : String(error) });
+    };
+    try {
+      const { submissionId } = await submissionApi.submitSolution(challenge.id, code);
+      if (!current()) return;
+      const start = Date.now();
+      const poll = async () => {
+        if (!current()) return;
+        try {
+          if (Date.now() - start >= 60000) throw new Error('Polling timeout. Check backend submission history later.');
+          const result = await submissionApi.pollSubmissionStatus(submissionId, true);
+          if (!current()) return;
+          setSubmissionStatus(result.status);
+          if (['QUEUED', 'COMPILING', 'RUNNING_TESTS'].includes(result.status)) {
+            pollTimerRef.current = setTimeout(() => void poll(), 500);
+            return;
+          }
+          setSubmissionResult(result);
+          setIsExecuting(false);
+          if (result.status === 'ACCEPTED') {
+            addToast({ type: 'success', title: 'Backend accepted submission', description: 'Refreshing server profile; no local XP is awarded.' });
+            await refreshProfile();
+          } else addToast({ type: 'warning', title: result.status, description: result.compilerOutput });
+        } catch (error) { fail(error); }
+      };
+      pollTimerRef.current = setTimeout(() => void poll(), 500);
+    } catch (error) { fail(error); }
   };
 
   const handleReset = () => {
@@ -261,6 +217,7 @@ export const WorkspaceView: React.FC = () => {
         gap: '12px',
       }}
     >
+      <p role="note">Run: local practice only — zero XP, no scored completion. Submit: authenticated backend scoring only.</p>
       {/* Workspace Subheader Navigation */}
       <div
         style={{

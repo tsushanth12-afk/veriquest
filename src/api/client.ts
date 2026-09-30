@@ -18,6 +18,7 @@
    ========================================================================== */
 
 import { supabase } from '../lib/supabase';
+import { sessionSnapshot, isCurrentSession } from './sessionBoundary';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -42,10 +43,11 @@ export interface ApiResponse<T> {
 /**
  * Get current Supabase session token for Bearer authentication.
  */
-async function getAccessToken(): Promise<string | null> {
+async function getAccessToken(expectedIdentity: string | null): Promise<string | null> {
+  if (!expectedIdentity) return null;
   try {
     const { data } = await supabase.auth.getSession();
-    return data.session?.access_token || null;
+    return data.session?.user.id === expectedIdentity ? data.session.access_token : null;
   } catch {
     return null;
   }
@@ -58,7 +60,10 @@ async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const token = await getAccessToken();
+  const snapshot = sessionSnapshot();
+  const token = await getAccessToken(snapshot.identity);
+  const stale = (): ApiResponse<T> => ({ data: null, error: { code: 'SESSION_CHANGED', message: 'Account changed. Retry from the current session.' } });
+  if (!isCurrentSession(snapshot)) return stale();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -70,31 +75,38 @@ async function apiFetch<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    let response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
     });
+    if (!isCurrentSession(snapshot)) return stale();
 
     if (!response.ok) {
       // 401: Attempt one session refresh and retry
       if (response.status === 401) {
         try {
-          const { data: refreshData } = await supabase.auth.refreshSession();
-          if (refreshData.session) {
+          const refreshData = snapshot.identity
+            ? (await supabase.auth.refreshSession()).data
+            : { session: null };
+          if (!isCurrentSession(snapshot)) return stale();
+          if (snapshot.identity && refreshData.session?.user.id === snapshot.identity) {
             headers['Authorization'] = `Bearer ${refreshData.session.access_token}`;
             const retryResp = await fetch(`${API_BASE}${endpoint}`, {
               ...options,
               headers,
             });
+            if (!isCurrentSession(snapshot)) return stale();
             if (retryResp.ok) {
               const data = await retryResp.json();
+              if (!isCurrentSession(snapshot)) return stale();
               return { data, error: null };
             }
+            response = retryResp;
           }
         } catch {
           // Refresh failed
         }
-        return {
+        if (response.status === 401) return {
           data: null,
           error: {
             code: 'UNAUTHORIZED',
@@ -147,6 +159,7 @@ async function apiFetch<T>(
     }
 
     const data = await response.json();
+    if (!isCurrentSession(snapshot)) return stale();
     return { data, error: null };
   } catch (err: unknown) {
     return {

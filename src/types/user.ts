@@ -28,6 +28,7 @@ export interface UserStats {
 }
 
 export interface UserProfile {
+  badges?: Array<{ unlocked: boolean }>;
   id: string;
   username: string;
   fullName: string;

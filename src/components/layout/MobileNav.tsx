@@ -24,7 +24,7 @@ interface MobileNavProps {
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
-  const { currentRoute, setCurrentRoute } = useApp();
+  const { currentRoute, setCurrentRoute, isAdmin } = useApp();
 
   // Accessibility: Dismiss mobile nav on Escape key
   useEffect(() => {
@@ -88,7 +88,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {navItems.map((item) => {
+          {navItems.filter(item => item.route !== 'admin' || isAdmin).map((item) => {
             const Icon = item.icon;
             const isActive = currentRoute === item.route;
 

@@ -58,7 +58,7 @@ export const AppSidebar: React.FC = () => {
 
       {/* Main Navigation */}
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
+        {navItems.filter(item => item.route !== 'admin' || isAdmin).map((item) => {
           const Icon = item.icon;
           const isActive = currentRoute === item.route;
           return (

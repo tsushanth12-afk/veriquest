@@ -20,12 +20,13 @@ interface SubmissionItem {
 }
 
 export const ChallengeHistoryTable: React.FC = () => {
-  const { openChallenge, setCurrentRoute, user } = useApp();
+  const { openChallenge, setCurrentRoute, user, isAuthenticated } = useApp();
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    if (!isAuthenticated) { setSubmissions([]); return; }
     setIsLoading(true);
 
     api.submissions
@@ -46,7 +47,7 @@ export const ChallengeHistoryTable: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [user.stats.totalSolved]);
+  }, [isAuthenticated, user.id, user.stats.totalSolved]);
 
   return (
     <div
@@ -92,7 +93,7 @@ export const ChallengeHistoryTable: React.FC = () => {
             No submissions recorded yet
           </span>
           <p style={{ margin: 0, fontSize: '12px', maxWidth: '340px', lineHeight: 1.5 }}>
-            Launch the <strong>Two-Input AND Gate</strong> development demo challenge to test continuous assignments and generate your first simulation record.
+            Use <strong>Run</strong> for unscored practice. Authenticated backend Submit creates durable submission history.
           </p>
           <button
             onClick={() => openChallenge('and-gate-demo')}

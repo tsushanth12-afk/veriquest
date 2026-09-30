@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export const HeroQuestCard: React.FC = () => {
   const { user, openChallenge } = useApp();
@@ -14,7 +14,6 @@ export const HeroQuestCard: React.FC = () => {
       ? Math.min(100, Math.round((user.stats.currentXP / user.stats.nextLevelXP) * 100))
       : 0;
 
-  const hasSolvedDemo = user.stats.totalSolved > 0;
 
   return (
     <div
@@ -130,18 +129,14 @@ export const HeroQuestCard: React.FC = () => {
           >
             <Sparkles size={13} />
             <span>
-              {hasSolvedDemo
-                ? 'Development Demo • Verified'
-                : 'Development Demo • Ready to Start'}
+              Local Practice • Unscored
             </span>
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)' }}>
             Two-Input AND Gate (Development Demo)
           </div>
           <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {hasSolvedDemo
-              ? 'All 4 boolean vectors passed. Review module or practice authoring in Admin panel.'
-              : 'Implement continuous assignment logic: a & b (+40 XP).'}
+            Implement continuous assignment logic: a &amp; b. Practice awards zero XP.
           </div>
         </div>
 
@@ -152,8 +147,7 @@ export const HeroQuestCard: React.FC = () => {
             className="neu-btn neu-btn-primary"
             style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            {hasSolvedDemo ? <CheckCircle2 size={16} /> : null}
-            <span>{hasSolvedDemo ? 'Review Demo' : 'Start Demo'}</span>
+            <span>Start Demo</span>
             <ArrowRight size={16} />
           </button>
         </div>
