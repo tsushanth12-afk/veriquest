@@ -1,215 +1,204 @@
-# ==========================================================================
-# VeriQuest Backend — JWKS RS256 JWT Verification & Auth Dependencies
-#
-# Method: Asymmetric RS256 verification via JWKS
-# Source: Supabase official docs (2025-2026) — asymmetric signing is
-#         the default for projects created since late 2025.
-# JWKS URL: {SUPABASE_URL}/auth/v1/.well-known/jwks.json
-#
-# The backend fetches public keys from Supabase's JWKS endpoint,
-# caches them (TTL 1 hour), and verifies JWTs locally — no network
-# roundtrip per request, no shared secret needed.
-# ==========================================================================
-
+"""Strict configured JWT verification; token-supplied URLs/algorithms are not authority."""
+import base64
+import json
+import re
+import threading
 import time
-import logging
-from typing import Optional
+from collections import OrderedDict
+from dataclasses import dataclass
+from uuid import UUID
+
 import httpx
 from fastapi import Depends, Request
-from jose import jwt, JWTError, jwk
-from jose.utils import base64url_decode
+from jose import JWTError, jwt
+from jose.exceptions import JWKError
+from starlette.concurrency import run_in_threadpool
 
-from .config import get_settings, Settings
-from .errors import unauthorized, forbidden
+from .config import Settings, get_settings
+from .errors import unauthorized
 
-logger = logging.getLogger("veriquest.security")
-
-
-# ======================================================================
-# JWKS Cache
-# ======================================================================
-
-_jwks_cache: dict | None = None
-_jwks_cache_time: float = 0
-_JWKS_TTL_SECONDS = 3600  # Re-fetch keys every hour
+_JWKS_TTL_SECONDS = 3600
+_JWKS_REFRESH_COOLDOWN_SECONDS = 30
+_MAX_JWKS_BYTES = 65536
+_MAX_CACHE_ENTRIES = 16
+_cache_lock = threading.Lock()
 
 
-def _fetch_jwks(supabase_url: str) -> dict:
-    """Fetch JSON Web Key Set from Supabase's well-known endpoint."""
-    jwks_url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-    try:
-        resp = httpx.get(jwks_url, timeout=10)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        logger.error(f"Failed to fetch JWKS from {jwks_url}: {e}")
-        raise unauthorized("Unable to verify authentication (JWKS fetch failed)")
+@dataclass
+class _CacheEntry:
+    document: dict | None = None
+    fetched_at: float = 0
+    attempted_at: float = float("-inf")
 
 
-def get_jwks(supabase_url: str) -> dict:
-    """Get JWKS with caching (TTL = 1 hour)."""
-    global _jwks_cache, _jwks_cache_time
-
-    now = time.time()
-    if _jwks_cache is not None and (now - _jwks_cache_time) < _JWKS_TTL_SECONDS:
-        return _jwks_cache
-
-    _jwks_cache = _fetch_jwks(supabase_url)
-    _jwks_cache_time = now
-    logger.info("JWKS cache refreshed")
-    return _jwks_cache
+_jwks_cache: OrderedDict[tuple, _CacheEntry] = OrderedDict()
 
 
-def _find_key(jwks: dict, kid: str) -> dict | None:
-    """Find a key in the JWKS by kid (Key ID)."""
-    for key in jwks.get("keys", []):
-        if key.get("kid") == kid:
-            return key
-    return None
+def _validate_jwks(document: object) -> dict:
+    if not isinstance(document, dict) or not isinstance(document.get("keys"), list) or not 1 <= len(document["keys"]) <= 64:
+        raise ValueError("Invalid JWKS document")
+    ids = set()
+    for key in document["keys"]:
+        if not isinstance(key, dict):
+            raise ValueError("Invalid JWKS key")
+        kid = key.get("kid")
+        if not isinstance(kid, str) or not kid or len(kid) > 256 or kid in ids:
+            raise ValueError("Invalid or duplicate key ID")
+        ids.add(kid)
+    return document
 
 
-# ======================================================================
-# Authenticated User
-# ======================================================================
-
-class AuthenticatedUser:
-    """Represents a verified Supabase user from JWT claims."""
-
-    def __init__(self, user_id: str, email: str | None = None, role: str = "authenticated"):
-        self.user_id = user_id
-        self.email = email
-        self.role = role
-
-    def __repr__(self) -> str:
-        return f"AuthenticatedUser(id={self.user_id}, email={self.email})"
+def _fetch_jwks(url: str) -> dict:
+    # Explicit finite timeout, no redirects and no environment proxy selection.
+    deadline = time.monotonic() + 10
+    with httpx.Client(timeout=httpx.Timeout(5.0), follow_redirects=False, trust_env=False) as client:
+        with client.stream("GET", url) as response:
+            response.raise_for_status()
+            body = bytearray()
+            for chunk in response.iter_bytes():
+                if time.monotonic() > deadline or len(body) + len(chunk) > _MAX_JWKS_BYTES:
+                    raise ValueError("JWKS exceeds size limit")
+                body.extend(chunk)
+    return _validate_jwks(json.loads(body))
 
 
-# ======================================================================
-# JWT Verification
-# ======================================================================
+def get_jwks(settings: Settings, *, refresh: bool = False) -> dict:
+    identity = (settings.jwt_jwks_url, settings.jwt_issuer, settings.jwt_audience,
+                settings.jwt_algorithms, settings.jwt_clock_tolerance_seconds)
+    # Serialize fetches so concurrent unknown-kid requests cannot bypass cooldown.
+    # Request dependencies call this through the threadpool, not the event loop.
+    with _cache_lock:
+        entry = _jwks_cache.setdefault(identity, _CacheEntry())
+        _jwks_cache.move_to_end(identity)
+        while len(_jwks_cache) > _MAX_CACHE_ENTRIES:
+            _jwks_cache.popitem(last=False)
+        now = time.monotonic()
+        fresh = entry.document is not None and now - entry.fetched_at < _JWKS_TTL_SECONDS
+        if fresh and not refresh:
+            return entry.document
+        if now - entry.attempted_at < _JWKS_REFRESH_COOLDOWN_SECONDS:
+            if fresh:
+                return entry.document
+            raise unauthorized("Authentication keys unavailable")
+        entry.attempted_at = now
+        try:
+            document = _validate_jwks(_fetch_jwks(settings.jwt_jwks_url))
+        except Exception:
+            # Never log response bodies, tokens or potentially sensitive URLs.
+            raise unauthorized("Authentication keys unavailable") from None
+        entry.document, entry.fetched_at = document, time.monotonic()
+        return document
+
+
+def _material(key: dict, field: str, length: int | None = None) -> bytes:
+    value = key.get(field)
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", value):
+        raise ValueError("Invalid key material")
+    data = base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    if not data or (length is not None and len(data) != length):
+        raise ValueError("Invalid key material")
+    return data
+
+
+def _find_key(document: dict, kid: str, algorithm: str) -> dict | None:
+    matches = [key for key in document["keys"] if key["kid"] == kid]
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise ValueError("Ambiguous key")
+    key = matches[0]
+    if key.get("alg") != algorithm or ("use" in key and key["use"] != "sig"):
+        raise ValueError("Incompatible key metadata")
+    if "key_ops" in key and key["key_ops"] != ["verify"]:
+        raise ValueError("Incompatible key operations")
+    if any(field in key for field in ("d", "p", "q", "dp", "dq", "qi", "k")):
+        raise ValueError("Expected public asymmetric key")
+    if algorithm == "ES256":
+        if key.get("kty") != "EC" or key.get("crv") != "P-256":
+            raise ValueError("Incompatible EC key")
+        _material(key, "x", 32)
+        _material(key, "y", 32)
+    else:
+        if key.get("kty") != "RSA":
+            raise ValueError("Incompatible RSA key")
+        modulus = int.from_bytes(_material(key, "n"), "big")
+        exponent = int.from_bytes(_material(key, "e"), "big")
+        if modulus.bit_length() < 2048 or exponent < 3 or exponent % 2 == 0:
+            raise ValueError("Invalid RSA key")
+    return key
+
 
 def verify_supabase_jwt(token: str, settings: Settings) -> dict:
-    """
-    Verify a Supabase JWT using JWKS-based RS256 asymmetric verification.
-
-    Steps:
-    1. Decode JWT header (unverified) to get `kid`
-    2. Look up matching public key in cached JWKS
-    3. Verify signature (RS256), audience, and expiry
-    4. Return decoded payload
-    """
     try:
-        # 1. Get unverified header to find kid
-        unverified_header = jwt.get_unverified_header(token)
-        kid = unverified_header.get("kid")
-
-        if not kid:
-            raise unauthorized("Token missing key ID (kid)")
-
-        # 2. Get matching key from JWKS
-        jwks_data = get_jwks(settings.supabase_url)
-        key_data = _find_key(jwks_data, kid)
-
-        if key_data is None:
-            # Key not found — maybe keys rotated. Force refresh and retry once.
-            global _jwks_cache_time
-            _jwks_cache_time = 0
-            jwks_data = get_jwks(settings.supabase_url)
-            key_data = _find_key(jwks_data, kid)
-
-            if key_data is None:
-                raise unauthorized("Token signed with unknown key")
-
-        # 3. Verify token
+        if not isinstance(token, str) or len(token) > 16384:
+            raise ValueError("Invalid token")
+        header = jwt.get_unverified_header(token)
+        algorithm, kid = header.get("alg"), header.get("kid")
+        if algorithm not in settings.jwt_algorithms.split(",") or not isinstance(kid, str) or not kid or len(kid) > 256:
+            raise ValueError("Invalid algorithm or key ID")
+        if header.get("crit") or header.get("b64") is False:
+            raise ValueError("Unsupported JOSE extension")
+        key = _find_key(get_jwks(settings), kid, algorithm)
+        if key is None:
+            key = _find_key(get_jwks(settings, refresh=True), kid, algorithm)
+        if key is None:
+            raise ValueError("Unknown signing key")
         payload = jwt.decode(
-            token,
-            key_data,
-            algorithms=["RS256"],
-            audience="authenticated",
-            options={
-                "verify_exp": True,
-                "verify_aud": True,
-                "verify_iss": False,  # Supabase issuer varies by project
-            },
+            token, key, algorithms=settings.jwt_algorithms.split(","),
+            issuer=settings.jwt_issuer, audience=settings.jwt_audience,
+            options={"verify_signature": True, "verify_iss": True, "verify_aud": True,
+                     "verify_exp": True, "verify_nbf": True, "verify_sub": True,
+                     "require_iss": True, "require_aud": True, "require_exp": True,
+                     "require_sub": True, "leeway": settings.jwt_clock_tolerance_seconds},
         )
-
+        if not isinstance(payload["iss"], str) or payload["iss"] != settings.jwt_issuer:
+            raise ValueError("Invalid issuer")
+        audience = payload["aud"]
+        if not (isinstance(audience, str) or (isinstance(audience, list) and audience and all(isinstance(a, str) and a for a in audience))):
+            raise ValueError("Invalid audience")
+        for claim in ("exp", "nbf", "iat"):
+            if claim in payload and (type(payload[claim]) is not int or payload[claim] < 0):
+                raise ValueError("Invalid numeric date")
+        subject = payload["sub"]
+        if not isinstance(subject, str) or str(UUID(subject)) != subject.lower() or UUID(subject).int == 0:
+            raise ValueError("Invalid UUID subject")
+        for claim in ("email", "role"):
+            if claim in payload and not isinstance(payload[claim], str):
+                raise ValueError("Invalid identity claim")
         return payload
-
-    except JWTError as e:
-        logger.warning(f"JWT verification failed: {e}")
-        raise unauthorized("Invalid or expired authentication token")
+    except (JWTError, JWKError, ValueError, TypeError, KeyError, OverflowError):
+        raise unauthorized("Invalid or expired authentication token") from None
 
 
-# ======================================================================
-# FastAPI Dependencies
-# ======================================================================
+class AuthenticatedUser:
+    def __init__(self, user_id: str, email: str | None = None, role: str = "authenticated"):
+        self.user_id, self.email, self.role = user_id, email, role
 
-async def get_current_user(
-    request: Request,
-    settings: Settings = Depends(get_settings),
-) -> AuthenticatedUser:
-    """
-    FastAPI dependency: extract and verify Supabase JWT from the
-    Authorization header. Returns AuthenticatedUser.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+    def __repr__(self) -> str:
+        return f"AuthenticatedUser(id={self.user_id})"
+
+
+async def _authenticate(request: Request, settings: Settings, optional: bool) -> AuthenticatedUser | None:
+    headers = request.headers.getlist("authorization")
+    if not headers and optional:
+        return None
+    if len(headers) != 1:
         raise unauthorized("Missing or malformed Authorization header")
-
-    token = auth_header[7:]  # Strip "Bearer "
-    if not token:
-        raise unauthorized("Empty token")
-
-    payload = verify_supabase_jwt(token, settings)
-
-    user_id = payload.get("sub")
-    if not user_id:
-        raise unauthorized("Token missing subject claim")
-
-    return AuthenticatedUser(
-        user_id=user_id,
-        email=payload.get("email"),
-        role=payload.get("role", "authenticated"),
-    )
+    parts = headers[0].split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise unauthorized("Malformed Authorization header")
+    payload = await run_in_threadpool(verify_supabase_jwt, parts[1], settings)
+    return AuthenticatedUser(payload["sub"], payload.get("email"), payload.get("role", "authenticated"))
 
 
-async def get_optional_user(
-    request: Request,
-    settings: Settings = Depends(get_settings),
-) -> Optional[AuthenticatedUser]:
-    """
-    FastAPI dependency: extract and verify Supabase JWT if present.
-    Returns None if no Authorization header, allowing anonymous browsing.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return None
-
-    token = auth_header[7:]
-    if not token:
-        return None
-
-    payload = verify_supabase_jwt(token, settings)
-    user_id = payload.get("sub")
-    if not user_id:
-        return None
-
-    return AuthenticatedUser(
-        user_id=user_id,
-        email=payload.get("email"),
-        role=payload.get("role", "authenticated"),
-    )
+async def get_current_user(request: Request, settings: Settings = Depends(get_settings)) -> AuthenticatedUser:
+    return await _authenticate(request, settings, False)
 
 
-async def require_admin(
-    user: AuthenticatedUser = Depends(get_current_user),
-) -> AuthenticatedUser:
-    """
-    FastAPI dependency: require admin role.
-    The actual admin check queries user_roles table in the database.
-    """
-    # Note: Real admin verification happens at the route handler level
-    # by querying user_roles table. This dependency is a marker that
-    # triggers at least authentication. Individual admin routes verify
-    # the role via DB query.
+async def get_optional_user(request: Request, settings: Settings = Depends(get_settings)) -> AuthenticatedUser | None:
+    return await _authenticate(request, settings, True)
+
+
+async def require_admin(user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
+    # Existing route-level database role checks remain authoritative.
     return user

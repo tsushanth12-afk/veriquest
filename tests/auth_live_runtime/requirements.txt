@@ -1,0 +1,8 @@
+# Match the isolated Windows auth-test dependency versions for this integration gate.
+fastapi==0.142.2
+uvicorn==0.54.0
+python-jose[cryptography]==3.5.0
+cryptography==50.0.2
+httpx==0.28.1
+pydantic==2.13.5
+pydantic-settings==2.15.0
