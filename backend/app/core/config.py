@@ -5,7 +5,8 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from urllib.parse import urlsplit
-from pydantic import field_validator
+from pydantic import field_validator, SecretStr
+from .database_config import validate_database_url
 
 
 class Settings(BaseSettings):
@@ -52,10 +53,33 @@ class Settings(BaseSettings):
         return value
 
     # Database
-    database_url: str = "postgresql://postgres:postgres@localhost:54322/postgres"
+    database_url: SecretStr
+
+    @field_validator('database_url')
+    @classmethod
+    def validate_database(cls, value: SecretStr) -> SecretStr:
+        validate_database_url(value.get_secret_value())
+        return value
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
+    # API publisher and worker use REDIS_URL; never infer transport from JWT URLs.
+    task_publish_timeout_seconds: int = 2
+
+    @field_validator("redis_url")
+    @classmethod
+    def validate_broker(cls, value: str) -> str:
+        url = urlsplit(value)
+        if value != value.strip() or url.scheme not in {"redis", "rediss"} or not url.hostname or url.query or url.fragment:
+            raise ValueError("Redis transport must be an explicit redis/rediss endpoint")
+        return value
+
+    @field_validator("task_publish_timeout_seconds")
+    @classmethod
+    def validate_publish_timeout(cls, value: int) -> int:
+        if not 1 <= value <= 5:
+            raise ValueError("Task publication timeout must be between 1 and 5 seconds")
+        return value
 
     # CORS
     allowed_origins: str = "http://localhost:5173,http://localhost:3000"
@@ -89,7 +113,7 @@ class Settings(BaseSettings):
     def level_breakpoints(self) -> list[int]:
         return [int(x.strip()) for x in self.level_thresholds.split(",")]
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "hide_input_in_errors": True, "extra": "ignore"}
 
 
 @lru_cache

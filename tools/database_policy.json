@@ -1,0 +1,809 @@
+{
+  "columns": {
+    "public.profiles": [
+      "id",
+      "username",
+      "display_name",
+      "avatar_url",
+      "bio",
+      "level",
+      "xp",
+      "current_streak",
+      "longest_streak",
+      "total_solved",
+      "easy_solved",
+      "medium_solved",
+      "hard_solved",
+      "total_attempts",
+      "created_at",
+      "updated_at"
+    ],
+    "public.user_roles": [
+      "id",
+      "user_id",
+      "role",
+      "granted_at",
+      "granted_by"
+    ],
+    "public.challenges": [
+      "id",
+      "slug",
+      "title",
+      "description",
+      "category",
+      "difficulty",
+      "level_number",
+      "xp_reward",
+      "estimated_minutes",
+      "starter_code",
+      "input_description",
+      "output_description",
+      "constraints",
+      "public_examples",
+      "io_pins",
+      "hints",
+      "learning_objective",
+      "is_published",
+      "is_archived",
+      "validation_status",
+      "validated_at",
+      "published_at",
+      "created_at",
+      "updated_at"
+    ],
+    "public.challenge_prerequisites": [
+      "id",
+      "challenge_id",
+      "prerequisite_id"
+    ],
+    "private.challenge_secrets": [
+      "id",
+      "challenge_id",
+      "official_solution",
+      "hidden_testbench",
+      "evaluator_type",
+      "test_vector_config",
+      "execution_profile",
+      "private_notes",
+      "created_at",
+      "updated_at"
+    ],
+    "public.user_challenge_progress": [
+      "id",
+      "user_id",
+      "challenge_id",
+      "status",
+      "attempts",
+      "best_submission_id",
+      "completed_at",
+      "created_at",
+      "updated_at"
+    ],
+    "public.submissions": [
+      "id",
+      "user_id",
+      "challenge_id",
+      "status",
+      "submitted_code",
+      "idempotency_key",
+      "submitted_at",
+      "started_at",
+      "completed_at",
+      "runtime_ms",
+      "simulation_ns",
+      "tests_total",
+      "tests_passed",
+      "tests_failed",
+      "error_code",
+      "public_message",
+      "compiler_output",
+      "xp_awarded",
+      "worker_id",
+      "created_at"
+    ],
+    "public.xp_transactions": [
+      "id",
+      "user_id",
+      "challenge_id",
+      "submission_id",
+      "amount",
+      "reason",
+      "created_at"
+    ],
+    "public.quests": [
+      "id",
+      "title",
+      "description",
+      "category",
+      "xp_reward",
+      "is_active",
+      "sort_order",
+      "created_at",
+      "updated_at"
+    ],
+    "public.quest_challenges": [
+      "id",
+      "quest_id",
+      "challenge_id",
+      "sort_order"
+    ],
+    "public.badges": [
+      "id",
+      "name",
+      "description",
+      "category",
+      "icon",
+      "requirement",
+      "rule_type",
+      "rule_config",
+      "is_active",
+      "created_at"
+    ],
+    "public.user_badges": [
+      "id",
+      "user_id",
+      "badge_id",
+      "unlocked_at"
+    ],
+    "public.streak_activity": [
+      "id",
+      "user_id",
+      "activity_date",
+      "activity_type",
+      "activity_count",
+      "created_at"
+    ],
+    "public.admin_audit_log": [
+      "id",
+      "admin_user_id",
+      "action",
+      "target_type",
+      "target_id",
+      "details",
+      "created_at"
+    ]
+  },
+  "rights": {
+    "anon": {
+      "public.challenges": {
+        "SELECT": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "category",
+          "difficulty",
+          "level_number",
+          "xp_reward",
+          "estimated_minutes",
+          "starter_code",
+          "input_description",
+          "output_description",
+          "constraints",
+          "public_examples",
+          "io_pins",
+          "hints",
+          "learning_objective",
+          "is_published",
+          "is_archived"
+        ]
+      },
+      "public.challenge_prerequisites": {
+        "SELECT": [
+          "id",
+          "challenge_id",
+          "prerequisite_id"
+        ]
+      },
+      "public.quests": {
+        "SELECT": [
+          "id",
+          "title",
+          "description",
+          "category",
+          "xp_reward",
+          "is_active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "public.quest_challenges": {
+        "SELECT": [
+          "id",
+          "quest_id",
+          "challenge_id",
+          "sort_order"
+        ]
+      },
+      "public.badges": {
+        "SELECT": [
+          "id",
+          "name",
+          "description",
+          "category",
+          "icon",
+          "requirement",
+          "is_active"
+        ]
+      }
+    },
+    "authenticated": {
+      "public.challenges": {
+        "SELECT": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "category",
+          "difficulty",
+          "level_number",
+          "xp_reward",
+          "estimated_minutes",
+          "starter_code",
+          "input_description",
+          "output_description",
+          "constraints",
+          "public_examples",
+          "io_pins",
+          "hints",
+          "learning_objective",
+          "is_published",
+          "is_archived"
+        ]
+      },
+      "public.challenge_prerequisites": {
+        "SELECT": [
+          "id",
+          "challenge_id",
+          "prerequisite_id"
+        ]
+      },
+      "public.quests": {
+        "SELECT": [
+          "id",
+          "title",
+          "description",
+          "category",
+          "xp_reward",
+          "is_active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "public.quest_challenges": {
+        "SELECT": [
+          "id",
+          "quest_id",
+          "challenge_id",
+          "sort_order"
+        ]
+      },
+      "public.badges": {
+        "SELECT": [
+          "id",
+          "name",
+          "description",
+          "category",
+          "icon",
+          "requirement",
+          "is_active"
+        ]
+      },
+      "public.profiles": {
+        "SELECT": [
+          "id",
+          "username",
+          "display_name",
+          "avatar_url",
+          "bio",
+          "level",
+          "xp",
+          "current_streak",
+          "longest_streak",
+          "total_solved",
+          "easy_solved",
+          "medium_solved",
+          "hard_solved",
+          "total_attempts",
+          "created_at",
+          "updated_at"
+        ],
+        "UPDATE": [
+          "display_name",
+          "bio",
+          "avatar_url"
+        ]
+      },
+      "public.user_challenge_progress": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "attempts",
+          "best_submission_id",
+          "completed_at",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "public.xp_transactions": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "submission_id",
+          "amount",
+          "reason",
+          "created_at"
+        ]
+      },
+      "public.user_badges": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "badge_id",
+          "unlocked_at"
+        ]
+      },
+      "public.streak_activity": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "activity_date",
+          "activity_type",
+          "activity_count",
+          "created_at"
+        ]
+      },
+      "public.submissions": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "submitted_at",
+          "completed_at",
+          "runtime_ms",
+          "simulation_ns",
+          "tests_total",
+          "tests_passed",
+          "tests_failed",
+          "error_code",
+          "public_message",
+          "compiler_output",
+          "xp_awarded"
+        ]
+      },
+      "public.user_roles": {
+        "SELECT": [
+          "user_id",
+          "role"
+        ]
+      }
+    },
+    "vq_api": {
+      "public.profiles": {
+        "SELECT": [
+          "id",
+          "username",
+          "display_name",
+          "avatar_url",
+          "bio",
+          "level",
+          "xp",
+          "current_streak",
+          "longest_streak",
+          "total_solved",
+          "easy_solved",
+          "medium_solved",
+          "hard_solved",
+          "total_attempts",
+          "created_at",
+          "updated_at"
+        ],
+        "UPDATE": [
+          "display_name",
+          "bio",
+          "avatar_url"
+        ]
+      },
+      "public.challenges": {
+        "SELECT": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "category",
+          "difficulty",
+          "level_number",
+          "xp_reward",
+          "estimated_minutes",
+          "starter_code",
+          "input_description",
+          "output_description",
+          "constraints",
+          "public_examples",
+          "io_pins",
+          "hints",
+          "learning_objective",
+          "is_published",
+          "is_archived",
+          "validation_status",
+          "validated_at",
+          "published_at",
+          "created_at",
+          "updated_at"
+        ],
+        "INSERT": [
+          "slug",
+          "title",
+          "description",
+          "category",
+          "difficulty",
+          "level_number",
+          "xp_reward",
+          "estimated_minutes",
+          "starter_code",
+          "input_description",
+          "output_description",
+          "constraints",
+          "public_examples",
+          "io_pins",
+          "hints",
+          "learning_objective",
+          "validation_status"
+        ],
+        "UPDATE": [
+          "title",
+          "description",
+          "category",
+          "difficulty",
+          "level_number",
+          "xp_reward",
+          "estimated_minutes",
+          "starter_code",
+          "input_description",
+          "output_description",
+          "constraints",
+          "public_examples",
+          "io_pins",
+          "hints",
+          "learning_objective",
+          "validation_status",
+          "validated_at",
+          "is_published",
+          "published_at"
+        ]
+      },
+      "public.user_challenge_progress": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "attempts",
+          "best_submission_id",
+          "completed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "INSERT": [
+          "user_id",
+          "challenge_id",
+          "status",
+          "attempts"
+        ],
+        "UPDATE": [
+          "status",
+          "attempts",
+          "updated_at"
+        ]
+      },
+      "public.user_badges": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "badge_id",
+          "unlocked_at"
+        ]
+      },
+      "public.admin_audit_log": {
+        "SELECT": [
+          "id",
+          "admin_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "details",
+          "created_at"
+        ],
+        "INSERT": [
+          "admin_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "details"
+        ]
+      },
+      "public.badges": {
+        "SELECT": [
+          "id",
+          "name",
+          "description",
+          "category",
+          "icon",
+          "requirement"
+        ]
+      },
+      "public.xp_transactions": {
+        "SELECT": [
+          "user_id",
+          "amount",
+          "created_at"
+        ]
+      },
+      "public.user_roles": {
+        "SELECT": [
+          "user_id",
+          "role"
+        ]
+      },
+      "public.submissions": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "idempotency_key",
+          "submitted_at",
+          "completed_at",
+          "runtime_ms",
+          "simulation_ns",
+          "tests_total",
+          "tests_passed",
+          "tests_failed",
+          "error_code",
+          "public_message",
+          "compiler_output",
+          "xp_awarded"
+        ],
+        "INSERT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "submitted_code",
+          "idempotency_key",
+          "submitted_at"
+        ],
+        "UPDATE": [
+          "status",
+          "completed_at",
+          "error_code",
+          "public_message"
+        ]
+      },
+      "private.challenge_secrets": {
+        "SELECT": [
+          "challenge_id",
+          "official_solution",
+          "hidden_testbench",
+          "evaluator_type",
+          "execution_profile",
+          "private_notes"
+        ],
+        "INSERT": [
+          "challenge_id",
+          "official_solution",
+          "hidden_testbench",
+          "evaluator_type",
+          "execution_profile",
+          "private_notes"
+        ],
+        "UPDATE": [
+          "official_solution",
+          "hidden_testbench",
+          "evaluator_type",
+          "execution_profile",
+          "private_notes"
+        ]
+      }
+    },
+    "vq_worker": {
+      "public.submissions": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "submitted_code",
+          "status"
+        ],
+        "UPDATE": [
+          "status",
+          "started_at",
+          "worker_id",
+          "completed_at",
+          "runtime_ms",
+          "simulation_ns",
+          "tests_total",
+          "tests_passed",
+          "tests_failed",
+          "error_code",
+          "public_message",
+          "compiler_output",
+          "xp_awarded"
+        ]
+      },
+      "public.challenges": {
+        "SELECT": [
+          "id",
+          "xp_reward",
+          "difficulty",
+          "is_published",
+          "validation_status"
+        ],
+        "UPDATE": [
+          "validation_status",
+          "validated_at"
+        ]
+      },
+      "private.challenge_secrets": {
+        "SELECT": [
+          "challenge_id",
+          "official_solution",
+          "hidden_testbench",
+          "evaluator_type",
+          "execution_profile"
+        ]
+      },
+      "public.profiles": {
+        "SELECT": [
+          "id",
+          "xp",
+          "level",
+          "total_solved",
+          "easy_solved",
+          "medium_solved",
+          "hard_solved",
+          "total_attempts",
+          "current_streak",
+          "longest_streak"
+        ],
+        "UPDATE": [
+          "xp",
+          "level",
+          "total_solved",
+          "easy_solved",
+          "medium_solved",
+          "hard_solved",
+          "total_attempts",
+          "current_streak",
+          "longest_streak"
+        ]
+      },
+      "public.user_challenge_progress": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "status",
+          "attempts",
+          "best_submission_id",
+          "completed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "INSERT": [
+          "user_id",
+          "challenge_id",
+          "status",
+          "attempts"
+        ],
+        "UPDATE": [
+          "status",
+          "attempts",
+          "best_submission_id",
+          "completed_at",
+          "updated_at"
+        ]
+      },
+      "public.xp_transactions": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "challenge_id",
+          "submission_id",
+          "amount",
+          "reason",
+          "created_at"
+        ],
+        "INSERT": [
+          "user_id",
+          "challenge_id",
+          "submission_id",
+          "amount",
+          "reason"
+        ]
+      },
+      "public.quests": {
+        "SELECT": [
+          "id",
+          "title",
+          "description",
+          "category",
+          "xp_reward",
+          "is_active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "public.quest_challenges": {
+        "SELECT": [
+          "id",
+          "quest_id",
+          "challenge_id",
+          "sort_order"
+        ]
+      },
+      "public.badges": {
+        "SELECT": [
+          "id",
+          "name",
+          "description",
+          "category",
+          "icon",
+          "requirement",
+          "rule_type",
+          "rule_config",
+          "is_active",
+          "created_at"
+        ]
+      },
+      "public.user_badges": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "badge_id",
+          "unlocked_at"
+        ],
+        "INSERT": [
+          "user_id",
+          "badge_id"
+        ]
+      },
+      "public.streak_activity": {
+        "SELECT": [
+          "id",
+          "user_id",
+          "activity_date",
+          "activity_type",
+          "activity_count",
+          "created_at"
+        ],
+        "INSERT": [
+          "user_id",
+          "activity_date",
+          "activity_type",
+          "activity_count"
+        ],
+        "UPDATE": [
+          "activity_count"
+        ]
+      },
+      "public.admin_audit_log": {
+        "INSERT": [
+          "admin_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "details"
+        ]
+      }
+    }
+  }
+}
+

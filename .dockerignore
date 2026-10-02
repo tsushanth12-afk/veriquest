@@ -1,0 +1,22 @@
+# Root-context worker: allow only its build/package closure.
+**
+!worker/
+!worker/**
+!backend/
+!backend/**
+**/.env
+**/.env.*
+**/.venv*
+**/venv
+**/env
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/*.egg-info
+**/*.log
+**/secrets*
+**/*credential*
+**/*.pem
+**/*.key
+backend/tests

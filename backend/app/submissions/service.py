@@ -11,6 +11,24 @@ from typing import Optional
 logger = logging.getLogger("veriquest.submissions")
 
 
+async def record_publication_failure(pool: asyncpg.Pool, submission_id: str, uncertain: bool):
+    """Do not overwrite a job already claimed by a worker after an ambiguous send."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE public.submissions
+            SET status = CASE WHEN $2 THEN 'queued' ELSE 'system_error' END,
+                completed_at = CASE WHEN $2 THEN NULL ELSE NOW() END,
+                error_code = $3, public_message = $4
+            WHERE id = $1::UUID AND status = 'queued'
+            """,
+            submission_id, uncertain,
+            "DISPATCH_UNCERTAIN" if uncertain else "DISPATCH_FAILED",
+            "Publication outcome unknown; poll this submission, do not resubmit."
+            if uncertain else "Submission could not be queued for execution.",
+        )
+
+
 async def create_submission(
     pool: asyncpg.Pool,
     user_id: str,

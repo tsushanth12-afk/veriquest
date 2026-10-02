@@ -58,6 +58,23 @@ app.add_middleware(
 )
 
 
+@app.middleware('http')
+async def sanitized_request_failures(request: Request, call_next):
+    """Do not rethrow driver errors to Uvicorn's raw exception logger.
+
+    Route HTTP/AppError handlers still provide their truthful structured errors.
+    Unexpected failures before response start become a generic 500 here; unlike
+    ServerErrorMiddleware's handler, this boundary does not re-raise the secret-
+    bearing exception after returning the response.
+    """
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.error('Request failed; private driver diagnostics withheld')
+        return JSONResponse(status_code=500, content={
+            'error': {'code': 'SYSTEM_ERROR', 'message': 'Internal server error'}})
+
+
 # Global error handler for AppError
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError):
@@ -101,7 +118,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 # Catch unhandled exceptions — never expose stack traces
 @app.exception_handler(Exception)
 async def generic_error_handler(request: Request, exc: Exception):
-    logger.exception(f"Unhandled error on {request.method} {request.url.path}")
+    logger.error('Unhandled request error; private driver diagnostics withheld')
     return JSONResponse(
         status_code=500,
         content={"error": {"code": "SYSTEM_ERROR", "message": "Internal server error"}},

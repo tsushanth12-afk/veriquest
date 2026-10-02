@@ -3,6 +3,7 @@
 # ==========================================================================
 
 import os
+from backend.app.core.task_contract import EXECUTE_TASK, VALIDATE_TASK, TASK_QUEUE
 
 broker_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 result_backend = os.environ.get("REDIS_URL", "redis://redis:6379/0")
@@ -13,8 +14,8 @@ accept_content = ["json"]
 
 # Task routing
 task_routes = {
-    "execute_hdl_submission": {"queue": "hdl_execution"},
-    "validate_challenge_task": {"queue": "hdl_execution"},
+    EXECUTE_TASK: {"queue": TASK_QUEUE},
+    VALIDATE_TASK: {"queue": TASK_QUEUE},
 }
 
 # Concurrency limits

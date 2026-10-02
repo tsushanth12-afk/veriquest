@@ -1,0 +1,28 @@
+{
+  "migrations": [
+    {
+      "version": "001",
+      "file": "001_initial_schema.sql",
+      "sha256": "3360912fc8398b7cb49f1354085e3aa659281e01111ea691aa61c08408a363b3"
+    },
+    {
+      "version": "003",
+      "file": "003_status_contract.sql",
+      "sha256": "fb3744453ddef0bea586a91b664a5cac39ca942f51aba6ed8feb0d3c9f95a2f4"
+    },
+    {
+      "version": "004",
+      "file": "004_permission_gate.sql",
+      "sha256": "416a96975a680b6be2909496cc2acae4ed711926cb7e4e21dc376055347d38bd"
+    },
+    {
+      "version": "005",
+      "file": "005_profile_identity_gate.sql",
+      "sha256": "998ec791149fbba706f85161b398db298b5fcf44e93f265fe75175413d780af6"
+    }
+  ],
+  "deferred": [
+    "002"
+  ],
+  "policy_sha256": "6e165e69753f9832104777ea280f25488188b72cf1ef6b1cda33cbfdce9b1e35"
+}

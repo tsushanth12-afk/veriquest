@@ -1,0 +1,19 @@
+# Backend runtime and deliberately included focused tests only.
+**
+!Dockerfile
+!requirements.txt
+!app/
+!app/**
+!tests/
+!tests/**
+**/.env
+**/.env.*
+**/.venv*
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/*.pem
+**/*.key
+**/secrets*
+**/*credential*
+**/*.log

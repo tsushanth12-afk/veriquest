@@ -9,6 +9,9 @@ from typing import Optional
 from ..core.security import get_current_user, AuthenticatedUser
 from ..core.errors import not_found, validation_error
 from ..core.rate_limit import limit_submission
+from ..core.config import Settings, get_settings
+from ..core.errors import AppError
+from ..core.task_publisher import publish_task, PublicationError, EXECUTE_TASK
 from ..db.session import get_db
 from .schemas import (
     SubmissionCreate,
@@ -16,7 +19,7 @@ from .schemas import (
     SubmissionListResponse,
     SubmissionListItem,
 )
-from .service import create_submission, get_submission, get_user_submissions
+from .service import create_submission, get_submission, get_user_submissions, record_publication_failure
 
 router = APIRouter(prefix="/api/v1/submissions", tags=["submissions"])
 
@@ -27,6 +30,7 @@ async def submit_solution(
     user: AuthenticatedUser = Depends(get_current_user),
     pool: asyncpg.Pool = Depends(get_db),
     _rl: None = Depends(limit_submission),
+    settings: Settings = Depends(get_settings),
 ):
     """
     Submit Verilog code for a challenge.
@@ -47,14 +51,19 @@ async def submit_solution(
     if isinstance(result, dict) and result.get("error"):
         raise validation_error(result["error"])
 
-    # Queue the Celery task for HDL execution
-    # Import here to avoid circular dependency at module load
-    try:
-        from worker.tasks.hdl_task import execute_hdl_submission
-        execute_hdl_submission.delay(result["submission_id"])
-    except ImportError:
-        # Worker not available in this process — that's okay in dev
-        pass
+    # Idempotency lookup must never initiate another execution, even if queued.
+    if not result.get("is_duplicate"):
+        try:
+            await publish_task(EXECUTE_TASK, [result["submission_id"]], settings)
+        except PublicationError as failure:
+            try:
+                await record_publication_failure(pool, result["submission_id"], failure.uncertain)
+            except Exception:
+                raise AppError(503, "DISPATCH_STATE_UNKNOWN",
+                               f"Could not record publication failure; submission_id={result['submission_id']}. Poll before retrying.") from None
+            code = "DISPATCH_UNCERTAIN" if failure.uncertain else "DISPATCH_FAILED"
+            raise AppError(503, code, f"{code}; submission_id={result['submission_id']}. "
+                           "Poll this ID; automatic republication is disabled.") from None
 
     return {
         "submission_id": result["submission_id"],

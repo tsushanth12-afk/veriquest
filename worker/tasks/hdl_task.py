@@ -12,9 +12,12 @@ import uuid
 from datetime import datetime, timezone
 
 from celery import Celery
+from backend.app.core.task_contract import EXECUTE_TASK, VALIDATE_TASK
+from backend.app.db.runtime import create_runtime_pool, close_runtime_pool
 
 from worker.execution.sandbox import DockerSandbox
 from worker.execution.evaluator import parse_evaluation_result
+from worker.execution.profile import parse_execution_profile
 
 logger = logging.getLogger("veriquest.worker")
 
@@ -35,8 +38,7 @@ async def _execute_hdl_submission(submission_id: str):
     7. Trigger gamification on ACCEPTED
     8. Cleanup
     """
-    db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:54322/postgres")
-    pool = await asyncpg.create_pool(dsn=db_url, min_size=1, max_size=2)
+    pool = await create_runtime_pool(os.environ.get('DATABASE_URL', ''), 'vq_worker')
 
     try:
         async with pool.acquire() as conn:
@@ -86,17 +88,19 @@ async def _execute_hdl_submission(submission_id: str):
                 return
 
             # 3. Get execution profile
-            exec_profile = secrets["execution_profile"] or {}
-            timeout_ms = exec_profile.get("timeout_ms", 5000)
-            memory_mb = exec_profile.get("memory_mb", 256)
-            cpu_limit = exec_profile.get("cpu_limit", "1.0")
+            try:
+                exec_profile = parse_execution_profile(secrets["execution_profile"])
+            except ValueError:
+                await conn.execute(
+                    """UPDATE public.submissions SET status = 'evaluator_not_configured',
+                       error_code = 'INVALID_EXECUTION_PROFILE', completed_at = NOW(),
+                       public_message = 'Challenge execution configuration is invalid'
+                       WHERE id = $1::UUID""", submission_id,
+                )
+                return
 
             # 4. Create workspace and execute
-            sandbox = DockerSandbox(
-                timeout_ms=timeout_ms,
-                memory_mb=memory_mb,
-                cpu_limit=cpu_limit,
-            )
+            sandbox = DockerSandbox(**exec_profile)
 
             # Update status to running
             await conn.execute(
@@ -189,7 +193,7 @@ async def _execute_hdl_submission(submission_id: str):
                 logger.warning(f"Submission {submission_id}: {status} — 0 attempt penalty assessed.")
 
     except Exception as e:
-        logger.exception(f"Worker error for submission {submission_id}: {e}")
+        logger.error('Worker database/execution failure; private diagnostics withheld')
         try:
             async with pool.acquire() as conn:
                 await conn.execute(
@@ -204,85 +208,63 @@ async def _execute_hdl_submission(submission_id: str):
         except Exception:
             pass
     finally:
-        await pool.close()
+        await close_runtime_pool(pool)
 
 
-@celery_app.task(name="execute_hdl_submission", bind=True, max_retries=1)
+@celery_app.task(name=EXECUTE_TASK, bind=True, max_retries=1)
 def execute_hdl_submission(self, submission_id: str):
     """Celery task wrapper for async HDL execution."""
     try:
         asyncio.run(_execute_hdl_submission(submission_id))
     except Exception as e:
-        logger.exception(f"Celery task failed for {submission_id}: {e}")
-        raise self.retry(countdown=5, exc=e)
+        logger.error('Celery task failed; private diagnostics withheld')
+        raise self.retry(countdown=5, exc=RuntimeError('Worker task failed')) from None
 
 
-@celery_app.task(name="validate_challenge_task")
-def validate_challenge_task(challenge_id: str, admin_user_id: str):
-    """
-    Validate a challenge by running the official solution against the hidden testbench.
-    Updates the challenge validation_status accordingly.
-    """
-    async def _validate():
-        db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:54322/postgres")
-        pool = await asyncpg.create_pool(dsn=db_url, min_size=1, max_size=2)
-
-        try:
-            async with pool.acquire() as conn:
+async def _validate_challenge(challenge_id: str, admin_user_id: str):
+    """Ordinary execution errors finalize failure; DB outages/crashes need recovery."""
+    pool = await create_runtime_pool(os.environ.get('DATABASE_URL', ''), 'vq_worker')
+    try:
+        async with pool.acquire() as conn:
+            pending = await conn.fetchval(
+                """SELECT id FROM public.challenges WHERE id = $1::UUID
+                   AND is_published = FALSE AND validation_status = 'validating'""", challenge_id,
+            )
+            if not pending:
+                return
+            try:
                 secrets = await conn.fetchrow(
-                    """
-                    SELECT official_solution, hidden_testbench, execution_profile
-                    FROM private.challenge_secrets
-                    WHERE challenge_id = $1::UUID
-                    """,
-                    challenge_id,
+                    """SELECT official_solution, hidden_testbench, execution_profile
+                       FROM private.challenge_secrets WHERE challenge_id = $1::UUID""", challenge_id,
                 )
-
-                if not secrets:
+                if not secrets or not secrets['official_solution'].strip() or not secrets['hidden_testbench'].strip():
+                    raise ValueError("Missing evaluator")
+                profile = parse_execution_profile(secrets['execution_profile'])
+                raw = DockerSandbox(**profile).execute(
+                    student_code=secrets['official_solution'], testbench=secrets['hidden_testbench'])
+                evaluation = parse_evaluation_result(raw)
+                status = 'validated' if evaluation['status'] == 'accepted' else 'validation_failed'
+                outcome = evaluation['status']
+            except Exception:
+                # Do not store solution/testbench or raw transport exceptions.
+                status, outcome = 'validation_failed', 'execution_error'
+            async with conn.transaction():
+                changed = await conn.fetchval(
+                    """UPDATE public.challenges SET validation_status = $2,
+                       validated_at = CASE WHEN $2 = 'validated' THEN NOW() ELSE NULL END
+                       WHERE id = $1::UUID AND is_published = FALSE AND validation_status = 'validating'
+                       RETURNING id""", challenge_id, status,
+                )
+                if changed:
                     await conn.execute(
-                        "UPDATE public.challenges SET validation_status = 'validation_failed' WHERE id = $1::UUID",
-                        challenge_id,
+                        """INSERT INTO public.admin_audit_log (admin_user_id, action, target_type, target_id, details)
+                           VALUES ($1::UUID, 'challenge_validated', 'challenge', $2::UUID, $3::JSONB)""",
+                        admin_user_id, challenge_id, json.dumps({'result': outcome, 'status': status}),
                     )
-                    return
+    finally:
+        await close_runtime_pool(pool)
 
-                exec_profile = secrets["execution_profile"] or {}
-                sandbox = DockerSandbox(
-                    timeout_ms=exec_profile.get("timeout_ms", 5000),
-                    memory_mb=exec_profile.get("memory_mb", 256),
-                    cpu_limit=exec_profile.get("cpu_limit", "1.0"),
-                )
 
-                result = sandbox.execute(
-                    student_code=secrets["official_solution"],
-                    testbench=secrets["hidden_testbench"],
-                )
-
-                evaluation = parse_evaluation_result(result)
-
-                if evaluation["status"] == "accepted":
-                    await conn.execute(
-                        "UPDATE public.challenges SET validation_status = 'validated', validated_at = NOW() WHERE id = $1::UUID",
-                        challenge_id,
-                    )
-                    logger.info(f"Challenge {challenge_id} validation PASSED")
-                else:
-                    await conn.execute(
-                        "UPDATE public.challenges SET validation_status = 'validation_failed' WHERE id = $1::UUID",
-                        challenge_id,
-                    )
-                    logger.warning(f"Challenge {challenge_id} validation FAILED: {evaluation}")
-
-                # Audit
-                await conn.execute(
-                    """
-                    INSERT INTO public.admin_audit_log (admin_user_id, action, target_type, target_id, details)
-                    VALUES ($1::UUID, 'challenge_validated', 'challenge', $2::UUID, $3::JSONB)
-                    """,
-                    admin_user_id,
-                    challenge_id,
-                    json.dumps({"result": evaluation["status"]}),
-                )
-        finally:
-            await pool.close()
-
-    asyncio.run(_validate())
+@celery_app.task(name=VALIDATE_TASK)
+def validate_challenge_task(challenge_id: str, admin_user_id: str):
+    return asyncio.run(_validate_challenge(challenge_id, admin_user_id))

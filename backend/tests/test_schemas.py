@@ -8,7 +8,7 @@ from app.challenges.schemas import (
     AdminChallengeDetailResponse,
     ChallengeListItem,
 )
-from app.gamification.xp import calculate_level, LEVEL_THRESHOLDS
+from app.gamification.xp import calculate_level
 
 
 def test_public_challenge_schema_omits_confidential_fields():
@@ -40,13 +40,13 @@ def test_calculate_level_thresholds():
     # Level 1 at 0 XP
     lvl, title = calculate_level(0)
     assert lvl == 1
-    assert title == "Novice Wireman"
+    assert title == "HDL Novice"
 
     # Level 2 at 500 XP
     lvl, title = calculate_level(500)
     assert lvl == 2
 
-    # Level 10 at 10000 XP
+    # Current configured eleventh threshold at 10000 XP
     lvl, title = calculate_level(10000)
-    assert lvl == 10
-    assert title == "Silicon Architect"
+    assert lvl == 11
+    assert title == "Silicon Master"

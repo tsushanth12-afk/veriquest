@@ -7,7 +7,7 @@ import json
 from fastapi import APIRouter, Depends
 
 from ..core.security import get_current_user, AuthenticatedUser
-from ..core.errors import not_found
+from ..core.errors import not_found, validation_error
 from ..db.session import get_db
 from ..gamification.xp import calculate_level
 
@@ -169,6 +169,11 @@ async def update_profile(
     if not updates:
         return {"message": "No valid fields to update"}
 
+    for field, limit in {'display_name': 100, 'bio': 2000, 'avatar_url': 2048}.items():
+        value = updates.get(field)
+        if value is not None and (not isinstance(value, str) or len(value) > limit):
+            raise validation_error('Invalid profile display field')
+
     # Build safe SET clause
     set_parts = []
     params = [user.user_id]
@@ -179,6 +184,8 @@ async def update_profile(
     query = f"UPDATE public.profiles SET {', '.join(set_parts)} WHERE id = $1::UUID"
 
     async with pool.acquire() as conn:
-        await conn.execute(query, *params)
+        outcome = await conn.execute(query, *params)
+        if outcome == 'UPDATE 0':
+            raise not_found('Profile')
 
     return {"message": "Profile updated", "updated_fields": list(updates.keys())}

@@ -38,12 +38,16 @@ class DockerSandbox:
         memory_mb: int = 256,
         cpu_limit: str = "1.0",
         pids_limit: int = 64,
+        max_output_bytes: int = 65536,
     ):
         self.image = image or os.environ.get("EXECUTION_IMAGE", "veriquest-icarus:latest")
         self.timeout_s = timeout_ms / 1000.0
         self.memory_mb = memory_mb
         self.cpu_limit = float(cpu_limit)
         self.pids_limit = pids_limit
+        if type(max_output_bytes) is not int or not 1 <= max_output_bytes <= 65536:
+            raise ValueError('Invalid output bound')
+        self.max_output_bytes = max_output_bytes
         self.client = None
 
         try:
@@ -134,6 +138,7 @@ exit "$run_code"
             max_output = int(os.environ.get('MAX_OUTPUT_BYTES', '65536'))
             if not 0 < max_output <= 65536:
                 max_output = 65536
+            max_output = min(max_output, self.max_output_bytes)
             streams = [bytearray(), bytearray()]
             total_bytes = 0
             truncated = False

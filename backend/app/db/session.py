@@ -6,6 +6,7 @@ import asyncpg
 import logging
 from contextlib import asynccontextmanager
 from ..core.config import get_settings
+from .runtime import create_runtime_pool, close_runtime_pool
 
 logger = logging.getLogger("veriquest.db")
 
@@ -18,23 +19,18 @@ async def init_db():
     global _pool
     settings = get_settings()
     try:
-        _pool = await asyncpg.create_pool(
-            dsn=settings.database_url,
-            min_size=2,
-            max_size=10,
-            command_timeout=30,
-        )
+        _pool = await create_runtime_pool(settings.database_url.get_secret_value(), 'vq_api', 2, 10)
         logger.info("Database connection pool initialized")
-    except Exception as e:
-        logger.error(f"Failed to initialize database pool: {e}")
-        raise
+    except Exception:
+        logger.error('Database initialization failed; private diagnostics withheld')
+        raise RuntimeError('Database initialization failed') from None
 
 
 async def close_db():
     """Close the database connection pool."""
     global _pool
     if _pool:
-        await _pool.close()
+        await close_runtime_pool(_pool)
         _pool = None
         logger.info("Database connection pool closed")
 

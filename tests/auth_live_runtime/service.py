@@ -15,7 +15,8 @@ from app.core.security import get_current_user, get_optional_user, _fetch_jwks, 
 
 
 def create_app():
-    settings = Settings(_env_file=None)
+    # Authentication-only service deliberately never connects this dummy DB endpoint.
+    settings = Settings(_env_file=None, database_url='postgresql://vq_api:unit-only@127.0.0.1:1/postgres')
     app = FastAPI()
     app.dependency_overrides[get_settings] = lambda: settings
 
@@ -43,7 +44,7 @@ def create_app():
     async def optional(user=Depends(get_optional_user)):
         return {"subject": user.user_id if user else None}
 
-    wrong = Settings(_env_file=None, jwt_issuer=settings.jwt_issuer + "/wrong",
+    wrong = Settings(_env_file=None, database_url=settings.database_url, jwt_issuer=settings.jwt_issuer + "/wrong",
                      jwt_jwks_url=settings.jwt_jwks_url, jwt_algorithms=settings.jwt_algorithms,
                      jwt_audience=settings.jwt_audience)
 

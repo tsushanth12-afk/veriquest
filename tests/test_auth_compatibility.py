@@ -29,6 +29,10 @@ from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 
 
+def configured(**kwargs):
+    return Settings(_env_file=None, database_url='postgresql://vq_api:unit-only@127.0.0.1:1/postgres', **kwargs)
+
+
 def b64(data):
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
 
@@ -51,7 +55,7 @@ class AuthenticationTests(unittest.TestCase):
         cls.rsa = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def setUp(self):
-        self.settings = Settings(_env_file=None)
+        self.settings = configured()
         self.document = {"keys": [public(self.ec, "ES256", "ec-one")]}
         self.calls = []
         self.clock = 1000.0
@@ -106,9 +110,9 @@ class AuthenticationTests(unittest.TestCase):
         token = self.token(key=self.rsa, algorithm="RS256", kid="rsa-one")
         self.reject(token)
         self.assertEqual(self.calls, [])
-        settings = Settings(_env_file=None, jwt_algorithms="RS256")
+        settings = configured(jwt_algorithms="RS256")
         self.assertEqual(security.verify_supabase_jwt(token, settings)["sub"], self.claims()["sub"])
-        settings = Settings(_env_file=None, jwt_algorithms="ES256,RS256")
+        settings = configured(jwt_algorithms="ES256,RS256")
         self.assertEqual(security.verify_supabase_jwt(token, settings)["sub"], self.claims()["sub"])
 
     def test_invalid_signature_tampering_and_algorithms(self):
@@ -164,7 +168,7 @@ class AuthenticationTests(unittest.TestCase):
             del self.document["keys"][0][field]; self.reject(self.token())
 
     def test_rsa_material(self):
-        self.settings = Settings(_env_file=None, jwt_algorithms="RS256")
+        self.settings = configured(jwt_algorithms="RS256")
         self.document = {"keys": [public(self.rsa, "RS256", "rsa-one")]}
         token = self.token(key=self.rsa, algorithm="RS256", kid="rsa-one")
         for change in ({"n": None}, {"e": "Ag"}, {"n": "AQ"}, {"kty": "EC"}):
@@ -196,12 +200,12 @@ class AuthenticationTests(unittest.TestCase):
     def test_cache_endpoint_and_configuration_isolation(self):
         token = self.token(); security.verify_supabase_jwt(token, self.settings)
         for change in ({"jwt_jwks_url": "http://other.local/keys"}, {"jwt_algorithms": "ES256,RS256"}):
-            settings = Settings(_env_file=None, **change)
+            settings = configured(**change)
             security.verify_supabase_jwt(token, settings)
         self.assertEqual(len(self.calls), 3)
         self.assertIn("http://other.local/keys", self.calls)
         for change in ({"jwt_issuer": "http://other.local/auth"}, {"jwt_audience": "other"}):
-            settings = Settings(_env_file=None, **change)
+            settings = configured(**change)
             self.reject(token, settings)
         self.assertEqual(len(self.calls), 5)
 
@@ -224,11 +228,11 @@ class AuthenticationTests(unittest.TestCase):
 
     def test_configuration_fail_closed(self):
         for algorithms in ("", "HS256", "ES256,", "ES256,ES256", "ES256, RS256", "none"):
-            with self.assertRaises(ValidationError): Settings(_env_file=None, jwt_algorithms=algorithms)
+            with self.assertRaises(ValidationError): configured(jwt_algorithms=algorithms)
         for values in ({"jwt_issuer": ""}, {"jwt_jwks_url": "file:///keys"},
                        {"jwt_jwks_url": "http://user:password@local/keys"},
                        {"jwt_audience": ""}, {"jwt_clock_tolerance_seconds": 61}):
-            with self.assertRaises(ValidationError): Settings(_env_file=None, **values)
+            with self.assertRaises(ValidationError): configured(**values)
 
     def test_headers_and_invalid_identity_types(self):
         payload = b64(json.dumps(self.claims()).encode())

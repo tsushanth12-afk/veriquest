@@ -145,6 +145,7 @@ class VerdictIntegrityTests(unittest.TestCase):
                 sandbox = DockerSandbox.__new__(DockerSandbox)
                 sandbox.image = 'unused-mock-image'
                 sandbox.timeout_s, sandbox.memory_mb, sandbox.cpu_limit, sandbox.pids_limit = 5, 256, 1, 64
+                sandbox.max_output_bytes = 65536
                 sandbox.client = Mock()
                 container = Mock()
                 container.wait.return_value = {'StatusCode': 0}
@@ -186,6 +187,7 @@ class VerdictIntegrityTests(unittest.TestCase):
         sandbox = DockerSandbox.__new__(DockerSandbox)
         sandbox.image = 'unused-mock-image'
         sandbox.timeout_s, sandbox.memory_mb, sandbox.cpu_limit, sandbox.pids_limit = 5, 256, 1, 64
+        sandbox.max_output_bytes = 128
         sandbox.client = Mock()
         container = Mock()
         container.wait.return_value = {'StatusCode': 0}
@@ -205,7 +207,7 @@ class VerdictIntegrityTests(unittest.TestCase):
             raw = sandbox.execute(CORRECT, BENCH)
         self.assertFalse(raw['output_complete'])
         self.assertTrue(raw['output_truncated'])
-        self.assertLessEqual(len(raw['stdout'].encode()), 256)
+        self.assertLessEqual(len(raw['stdout'].encode()), 128)
         self.assertEqual(parse_evaluation_result(raw)['status'], 'system_error')
         container.kill.assert_called()
         container.logs.assert_not_called()

@@ -10,6 +10,9 @@ from fastapi import APIRouter, Depends
 from ..core.security import get_current_user, require_admin, AuthenticatedUser
 from ..core.errors import not_found, forbidden, validation_error
 from ..core.rate_limit import limit_admin_actions
+from ..core.config import Settings, get_settings
+from ..core.errors import AppError
+from ..core.task_publisher import publish_task, PublicationError, VALIDATE_TASK
 from ..db.session import get_db
 from ..challenges.schemas import (
     AdminChallengeCreate,
@@ -24,12 +27,13 @@ router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 async def verify_admin(conn: asyncpg.Connection, user: AuthenticatedUser) -> bool:
     """Server-authoritative admin role check."""
-    if user.role == "admin":
-        return True
-    role = await conn.fetchval(
-        "SELECT role FROM public.user_roles WHERE user_id = $1::UUID AND role = 'admin'",
-        user.user_id,
-    )
+    try:
+        role = await conn.fetchval(
+            "SELECT role FROM public.user_roles WHERE user_id = $1::UUID AND role = 'admin'",
+            user.user_id,
+        )
+    except Exception:
+        raise AppError(503, 'SYSTEM_ERROR', 'Administrator authority could not be verified') from None
     return role == "admin"
 
 
@@ -292,12 +296,13 @@ async def update_challenge(
     return {"message": "Challenge updated"}
 
 
-@router.post("/challenges/{challenge_id}/validate")
+@router.post("/challenges/{challenge_id}/validate", status_code=202)
 async def validate_challenge(
     challenge_id: str,
     user: AuthenticatedUser = Depends(get_current_user),
     pool: asyncpg.Pool = Depends(get_db),
     _rl: None = Depends(limit_admin_actions),
+    settings: Settings = Depends(get_settings),
 ):
     """
     Validate a challenge by running the official solution against the hidden testbench.
@@ -309,68 +314,62 @@ async def validate_challenge(
 
         # Get challenge + secrets
         challenge = await conn.fetchrow(
-            "SELECT id, title, slug FROM public.challenges WHERE id = $1::UUID",
+            "SELECT id, is_published, validation_status FROM public.challenges WHERE id = $1::UUID",
             challenge_id,
         )
         if not challenge:
             raise not_found("Challenge")
+        if challenge["is_published"]:
+            raise AppError(409, "CONFLICT", "Published challenges cannot be revalidated; revision-safe revalidation is not supported.")
+        if challenge["validation_status"] == "validating":
+            raise AppError(409, "CONFLICT", "Challenge validation is already pending.")
 
         secrets = await conn.fetchrow(
             "SELECT official_solution, hidden_testbench, evaluator_type FROM private.challenge_secrets WHERE challenge_id = $1::UUID",
             challenge_id,
         )
-        if not secrets or not secrets["official_solution"] or not secrets["hidden_testbench"]:
+        if not secrets or not secrets["official_solution"].strip() or not secrets["hidden_testbench"].strip():
             raise validation_error("Challenge must have an official solution and hidden testbench before validation")
 
-        solution = secrets["official_solution"].strip()
-        testbench = secrets["hidden_testbench"].strip()
+        async with conn.transaction():
+            claimed = await conn.fetchval(
+                """UPDATE public.challenges SET validation_status = 'validating', validated_at = NULL
+                   WHERE id = $1::UUID AND is_published = FALSE AND validation_status <> 'validating'
+                   RETURNING id""", challenge_id,
+            )
+            if not claimed:
+                raise AppError(409, "CONFLICT", "Challenge state changed or validation is already pending.")
+            await conn.execute(
+                """INSERT INTO public.admin_audit_log (admin_user_id, action, target_type, target_id, details)
+                   VALUES ($1::UUID, 'challenge_validation_requested', 'challenge', $2::UUID, $3::JSONB)""",
+                user.user_id, challenge_id, json.dumps({"status": "validating"}),
+            )
 
-        # Mark as validating
-        await conn.execute(
-            "UPDATE public.challenges SET validation_status = 'validating' WHERE id = $1::UUID",
-            challenge_id,
-        )
-
-        # Real validation requires executing the official solution against the hidden testbench
-        # to ensure it compiles and deterministically passes before marking validated.
+    # Publication occurs without holding a DB connection or executing HDL in API.
+    try:
+        task_id = await publish_task(VALIDATE_TASK, [challenge_id, user.user_id], settings)
+    except PublicationError as failure:
         try:
-            from worker.execution.sandbox import DockerSandbox
-            from worker.execution.evaluator import parse_evaluation_result
-            sandbox = DockerSandbox()
-            raw_result = sandbox.execute(student_code=solution, testbench=testbench)
-            eval_result = parse_evaluation_result(raw_result)
-            is_valid = (eval_result.get("status") == "accepted")
-            validation_msg = eval_result.get("public_message") or ("Validation passed" if is_valid else "Official solution failed testbench")
-        except Exception as e:
-            is_valid = False
-            validation_msg = f"Validation execution engine error: {str(e)}"
-
-        if is_valid:
-            await conn.execute(
-                "UPDATE public.challenges SET validation_status = 'validated', validated_at = NOW() WHERE id = $1::UUID",
-                challenge_id,
-            )
-        else:
-            await conn.execute(
-                "UPDATE public.challenges SET validation_status = 'validation_failed' WHERE id = $1::UUID",
-                challenge_id,
-            )
-
-        # Audit
-        await conn.execute(
-            """
-            INSERT INTO public.admin_audit_log (admin_user_id, action, target_type, target_id, details)
-            VALUES ($1::UUID, 'challenge_validated', 'challenge', $2::UUID, $3::JSONB)
-            """,
-            user.user_id,
-            challenge_id,
-            json.dumps({"success": is_valid, "message": validation_msg}),
-        )
-
-    if not is_valid:
-        raise validation_error(f"Validation failed: {validation_msg}")
-
-    return {"message": "Challenge validated successfully", "challenge_id": str(challenge_id), "status": "validated"}
+            async with pool.acquire() as conn:
+                if not failure.uncertain:
+                    await conn.execute(
+                        """UPDATE public.challenges SET validation_status = 'validation_failed'
+                           WHERE id = $1::UUID AND is_published = FALSE AND validation_status = 'validating'""",
+                        challenge_id,
+                    )
+                await conn.execute(
+                    """INSERT INTO public.admin_audit_log (admin_user_id, action, target_type, target_id, details)
+                       VALUES ($1::UUID, 'challenge_validation_dispatch_error', 'challenge', $2::UUID, $3::JSONB)""",
+                    user.user_id, challenge_id,
+                    json.dumps({"outcome": "uncertain" if failure.uncertain else "not_published"}),
+                )
+        except Exception:
+            raise AppError(503, "DISPATCH_STATE_UNKNOWN",
+                           f"Could not record publication failure; challenge_id={challenge_id}. Poll before retrying.") from None
+        raise AppError(503, "DISPATCH_UNCERTAIN" if failure.uncertain else "DISPATCH_FAILED",
+                       f"Validation dispatch failed; challenge_id={challenge_id}. Poll challenge details before retrying.") from None
+    return {"challenge_id": challenge_id, "status": "validating", "task_id": task_id,
+            "message": "Validation queued; no validation verdict is available yet."}
 
 
 @router.post("/challenges/{challenge_id}/publish")

@@ -19,8 +19,8 @@ from typing import Optional, Callable
 from fastapi import Request, Depends
 
 from .config import get_settings, Settings
-from .errors import rate_limited
-from .security import get_current_user, AuthenticatedUser
+from .errors import rate_limited, unauthorized
+from .security import get_optional_user, AuthenticatedUser
 
 logger = logging.getLogger("veriquest.ratelimit")
 
@@ -114,9 +114,11 @@ class RateLimit:
         self,
         request: Request,
         settings: Settings = Depends(get_settings),
-        user: Optional[AuthenticatedUser] = None,
+        user: Optional[AuthenticatedUser] = Depends(get_optional_user),
     ):
-        if self.key_type == "user" and user:
+        if self.key_type == "user":
+            if user is None:
+                raise unauthorized()
             identifier = f"user:{user.user_id}"
         else:
             identifier = f"ip:{_get_client_ip(request)}"
