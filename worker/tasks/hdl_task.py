@@ -75,11 +75,12 @@ async def _execute_hdl_submission(submission_id: str):
                 submission["challenge_id"],
             )
 
-            if not secrets or not secrets["hidden_testbench"]:
+            if (not secrets or not isinstance(secrets["hidden_testbench"], str)
+                    or not secrets["hidden_testbench"].strip()):
                 await conn.execute(
                     """
                     UPDATE public.submissions
-                    SET status = 'system_error', error_code = 'MISSING_EVALUATOR',
+                    SET status = 'evaluator_not_configured', error_code = 'MISSING_EVALUATOR',
                         public_message = 'Challenge evaluator not configured', completed_at = NOW()
                     WHERE id = $1::UUID
                     """,

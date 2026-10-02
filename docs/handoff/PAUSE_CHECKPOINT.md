@@ -1,6 +1,125 @@
 # VeriQuest pause checkpoint
 
-## Current checkpoint review — 2026-10-02
+## Redis/Celery delivery checkpoint review — 2026-10-02
+
+This section supersedes the older availability, pending-change and unverified
+delivery statements below. Preserve the historical sections/reports; do not infer
+permission to rerun a live harness, change the database or start another milestone.
+
+Read `docs/handoff/REDIS_CELERY_DELIVERY_REPORT.md` first on resume.
+Reviewed parent: `main`, HEAD `bb8fdfc570d37a3c99fe3b9713673a3ed350c2d0`, message
+`Harden backend dispatch and verify local database permissions`. Origin is
+`https://github.com/tsushanth12-afk/veriquest.git`; read-only remote main matched
+that parent immediately before this checkpoint. Backend dispatch/database permission
+work is already committed in that parent, not still pending.
+
+The user authorized this seven-file checkpoint with message
+`Verify real Celery delivery and reject missing evaluators`, followed by a normal
+push to origin/main. The checkpoint commit is the commit containing this section;
+resolve its hash/push parity from Git and the checkpoint task's final response.
+This precommit document does not assert that a commit/push succeeded in advance.
+
+### Completed delivery milestone — previously executed evidence
+
+The delivery report records the final real local gate: exit 0, **152 assertions,
+12 recorded API HTTP cases**, and three canonical hdl_execution messages observed
+in Redis and received by the actual packaged Celery worker. An earlier corrected
+complete run also passed; repeated runs do not increase unique coverage. Failed
+harness attempts and exact recovery are retained in that report.
+
+Verified then: real local Auth/sign-in and full API lifespan, separate restricted
+API/worker pools, submission publication/receipt/durable evaluator failure, owner-only
+polling, sequential idempotent nonpublication, administrator queued validation
+failure, definite Redis outage failure persistence, and successful subsequent
+delivery after restoration. All XP/solved/completed progress remained zero.
+
+The narrow production correction rejects missing/empty/whitespace/non-string
+testbench data before DockerSandbox and records evaluator_not_configured /
+MISSING_EVALUATOR rather than system_error. No native HDL simulation was performed;
+fixture publication was expressly setup, not native validation.
+
+Latest independent cleanup in that report: zero rows in all 14 application tables,
+Auth users/identities 0, Auth audit history retained at 136, applied 001/003/004/005
+and full permissions/roles intact, seed 002 deferred, ten existing Supabase containers
+running. All task containers/networks/image tags were removed. Encrypted exact-resource
+journals, retained credentials/snapshot and separate restart attestations remain
+outside Git/build contexts. Historical snapshot pins were not overwritten.
+
+These live observations are **prior milestone evidence**, not fresh database checks
+for this Git checkpoint. This checkpoint queried no database/Auth endpoint and did
+not start services. Docker responded to a read-only image inventory; both recorded
+API/worker test image IDs are absent. Reverify the same target read-only before any
+future authorized write; do not reuse changed container pins without provenance checks.
+
+### Checkpoint review and checks rerun — no live writes/services
+
+Initial pending inventory: 0 staged, 2 modified tracked files and 4 untracked intended
+files. Reviewed all six completely, then updated this checkpoint as the seventh:
+
+- worker/tasks/hdl_task.py
+- tests/test_worker_dispatch.py
+- tools/redis_celery_delivery.py
+- tests/redis_celery_delivery_probe.py
+- tests/test_redis_celery_delivery.py
+- docs/handoff/REDIS_CELERY_DELIVERY_REPORT.md
+- docs/handoff/PAUSE_CHECKPOINT.md
+
+| Check actually rerun | Result |
+| --- | --- |
+| `.venv/Scripts/python.exe -B tests/test_redis_celery_delivery.py` | Exit 0; 8 methods |
+| `.venv/Scripts/python.exe -B tests/test_database_live_resources.py` | Exit 0; 7 methods |
+| `.venv/Scripts/python.exe -B tests/test_database_gate.py` | Exit 0; 14 methods, including unchanged manifest checks |
+| `.venv/Scripts/python.exe -B tests/test_auth_compatibility.py` | Exit 0; 17 generated-key methods; existing Starlette warning |
+| `.venv/Scripts/python.exe -B tests/test_database_live_driver.py` | Exit 0; 6 methods in authorized Windows CurrentUser/DPAPI context |
+| `node tests/status_contract_consistency.test.mjs` | Exit 0; 6 static checks |
+| AST parsing of changed/new Python | Exit 0; 5 files |
+| Limited literal secret-pattern/whitespace/inventory scan | Exit 0; 6 milestone files, zero candidate patterns/unexpected untracked files |
+| `git diff --check` before checkpoint update/staging | Exit 0; LF/CRLF informational warnings only |
+
+Total rerun: **52 Python methods plus 6 static checks**, not live delivery or native
+grading proof. Production worker/API/verdict suites require absent host asyncpg,
+Celery, Docker Python and pytest; the two prior image IDs returned No such image.
+No image rebuild, dependency installation or unit container/service start was used
+to replace that unavailable validation. Earlier actual-image results (52 API,
+8 worker dispatch, 9 parser methods) remain historical in the delivery report.
+
+No questionable credential or unintended file was identified. The intended source
+constructs credentials only at runtime, uses private stdin/encrypted intent and
+keeps fixture operator authority separate from API/worker runtime credentials.
+Private recovery-path references/task correlations in reports are not secret payloads.
+The limited pattern review is not exhaustive secret certification. Snapshots, DPAPI
+credentials/journals, private env files, .venv, caches and dependencies are excluded
+from the explicit stage list. Existing build allowlists/sensitive exclusions remain
+unchanged. Only this checkpoint was edited during checkpoint preparation; milestone
+implementation and its historical delivery report were preserved.
+
+### Remaining gates and exact resume boundary
+
+Real Redis/Celery delivery of controlled pre-sandbox failures is now locally verified.
+It is no longer an unexecuted gate, but it does **not** prove:
+
+1. Native simulator/workspace mounts, UID, isolation, execution/cleanup or successful
+   grading; no API/worker Docker socket or grading executor existed in the gate.
+2. XP/attempt/quest/badge correctness, concurrent awards or reconciliation.
+3. Atomic publication/outbox, atomic claims, concurrent idempotency, exactly-once,
+   uncertain post-send outcomes or job crash recovery.
+4. Revision/task-bound authoring and successful native administrator validation.
+5. Actual snapshot restoration, the historical unexplained SQL timeout's cause,
+   in-flight/concurrent/hardware failure and interrupted-recovery windows.
+6. Existing Supabase LAN exposure, hosted/deployed configuration or production readiness.
+
+Exact next safe step on return: read this section and the delivery report, recheck
+branch/HEAD/origin/remote parity and working tree, then read-only verify the retained
+local target/preflight if environment work is separately requested. Discuss and
+authorize the next bounded engineering milestone before implementation or live writes.
+Do not automatically run the opt-in delivery/recovery driver, seed 002, reset,
+bootstrap/apply, account provisioning, queues or native sandbox work from this document.
+Leave existing Supabase unchanged. Git is not a backup of private recovery artifacts
+or Docker volumes. Stop after the requested checkpoint confirmation.
+
+---
+
+## Historical backend/database checkpoint review — 2026-10-02
 
 This section supersedes the environment and Git-pending statements below. Earlier
 sections and handoff reports are historical evidence, not instructions to reapply

@@ -122,6 +122,21 @@ class WorkerDispatchTests(unittest.TestCase):
         self.assertIn('evaluator_not_configured', conn.execute.call_args.args[0])
         pool.close.assert_awaited_once()
 
+    def test_submission_missing_or_empty_evaluator_never_constructs_sandbox(self):
+        for secrets in [None, {'hidden_testbench': ''}, {'hidden_testbench': ' \n\t'},
+                        {'hidden_testbench': None}]:
+            with self.subTest(secrets=secrets):
+                conn, pool = database()
+                conn.fetchrow.side_effect = [dict(user_id=ID, challenge_id=ID,
+                                                submitted_code='code'), secrets]
+                with patch.object(tasks, 'create_runtime_pool', AsyncMock(return_value=pool)), \
+                     patch.object(tasks, 'DockerSandbox') as sandbox:
+                    asyncio.run(tasks._execute_hdl_submission(ID))
+                sandbox.assert_not_called()
+                self.assertIn('evaluator_not_configured', conn.execute.call_args.args[0])
+                self.assertIn('MISSING_EVALUATOR', conn.execute.call_args.args[0])
+                pool.close.assert_awaited_once()
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
