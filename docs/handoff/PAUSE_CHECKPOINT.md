@@ -1,5 +1,177 @@
 # VeriQuest pause checkpoint
 
+## Native workspace/reliability checkpoint review — 2026-10-08
+
+This section supersedes the older native-work-pending and next-gate statements
+below. Preserve both native reports and all historical sections. Read
+`NATIVE_SANDBOX_RELIABILITY_REPORT.md` alongside `NATIVE_SANDBOX_WORKSPACE_REPORT.md`;
+the reliability report describes the current bounded-volume implementation, while
+the workspace report records the earlier plain-volume design and its limitations.
+
+Reviewed parent: branch `main`, HEAD
+`6ef8c478115b9961dd78fc1d6da51e6d8c68dc1f`, latest message
+`Verify real Celery delivery and reject missing evaluators`. Origin fetch and push
+URLs both match `https://github.com/tsushanth12-afk/veriquest.git`; a fresh read-only
+remote-main query matched the parent. The initial restricted-network query failed;
+the approved normal-user query succeeded without changing Git history.
+
+The user authorized this reviewed checkpoint on main with message
+`Bound native grading workspaces and verify resource failures`, followed by a normal
+push to origin/main. This document does not assert a commit/push succeeded before
+execution; obtain the resulting hash and remote parity from Git and the checkpoint
+task's final response. No force push, pull, reset or automatic merge is authorized.
+
+### Completed local milestones — previously executed evidence
+
+The workspace report records its final real Docker/Icarus gate: exit 0, 847
+assertions, 36 recorded cases, 32 independently inspected executors and 39 matching
+packaged Python source hashes. All four catalog correct/alternate solutions passed;
+wrong/syntax/forgery/process/capture failures remained nonaccepting. Caller SIGTERM
+recovery and subsequent ordinary evaluation passed. A separate overlap run failed
+with a real Docker SDK ReadTimeout and cleaned its resources.
+
+The reliability report records the corrected final native gate: exit 0, 848
+assertions, 36 cases, 32 executor inspections and 40 packaged source hashes, followed
+by a fixed 42-case matrix: serial 16, four-caller waves 8, WASM-overlap schedule 8,
+trusted resource/admission exhaustion and recovery 10. All four correct catalog
+solutions remained accepted through real Icarus. Genuine memory/PID/file/aggregate
+workspace exhaustion and full admission returned resource_limit; ordinary recovery
+jobs passed. The first ineffective memory fixture did not reach exhaustion and
+failed its assertion; that failed attempt remains documented. Later passes do not
+explain the historical timeout. WASM evidence is separate: 146 named assertions,
+53 TypeScript evaluations and 13 Python-parser real-WASM cases, exit 0.
+
+These are **prior executed milestone results**, not rerun native stress or fresh
+database checks during this Git checkpoint. Independently verified cleanup then
+removed exact task containers/volumes/image tags and preserved unrelated resources.
+The reliability inventory had ten existing Supabase containers, nine running and
+edge_runtime already exited. No current service/database state is inferred here;
+this checkpoint did not query Docker, Auth, PostgreSQL or start services.
+
+### Current design, security review and operational requirements
+
+- Require the exact local named-volume options `type=tmpfs`, `device=tmpfs`,
+  `o=size=134217728,mode=0700`, actual capacity 128MiB and the matching worker RW
+  mount at `/var/lib/veriquest/workspaces`. At most four outstanding job records
+  share a volume; admission lock acquisition is bounded to 500ms, with a free-space
+  check before reserving an intent. This is not a per-file-only aggregate claim.
+- Existing plain/unbounded or incompatible volumes are rejected, not automatically
+  replaced, reformatted or pruned. A differently configured existing volume needs
+  separately reviewed operator action. Do not run Compose to repair it implicitly.
+- Tmpfs recovery is volatile: records survive caller interruption while mounted,
+  not power loss/remount. Durable job reconciliation and crash safety are unproved.
+- Executor mounts are exact generated input RO/output RW subpaths, never the whole
+  shared volume or host workspace. UID/GID 1000, network none, read-only root,
+  dropped capabilities, no-new-privileges and bounded resources remain in force.
+  The root worker's Docker socket remains privileged infrastructure authority;
+  neither API nor executor receives it through these changes.
+- Trusted process exits, complete bounded capture and the independent verdict token
+  remain required. Kernel/adapter resource evidence, not student stdout, drives
+  resource_limit. Cleanup failure takes precedence and prevents acceptance; exact
+  label/record matching and symlink-safe deletion retain intent on uncertainty.
+  Safe per-RPC diagnostics omit source/benches/tokens/raw exception messages.
+- The historical ReadTimeout's cause remains unresolved. No larger deadlines,
+  automatic production retries or Docker restart were used to obtain a pass.
+- Four direct callers at the documented modest profiles do not prove Celery
+  prefork/queued-worker concurrency or worst-case capacity. SDK frame buffering,
+  aggregate worker RSS and other runtime/cgroup configurations remain separate gates.
+
+Full review covered all nineteen initial pending files, including new source,
+harnesses, tests, configuration and both reports. No blocking unsafe mount,
+permission broadening, synthetic verdict fallback, unrelated change or literal
+credential was identified. Limited secret-pattern scans are not exhaustive security
+certification. Build exclusions keep executor context to Dockerfile/run.sh and
+exclude private env/credentials/dependency caches from the worker context. No
+implementation or historical report was changed for this checkpoint; only this
+summary was added. Pre-push review/commit skills informed explicit inventory,
+secret checks and staging; user scope overrides broader cleanup/service suggestions.
+
+### Focused checks actually rerun for this checkpoint
+
+Using existing dependencies; every command below exited 0:
+
+| Command/check | Result and evidence type |
+| --- | --- |
+| `.venv/Scripts/python.exe -B tests/test_native_diagnostics.py` | 3 methods; production trace, controlled faults |
+| `.venv/Scripts/python.exe -B tests/test_verdict_integrity.py` | 9 methods plus subcases; production parser/adapter, mocked Docker/storage |
+| `.venv/Scripts/python.exe -B tests/test_redis_celery_delivery.py` | 8 helper methods; no live broker/database |
+| `.venv/Scripts/python.exe -B tests/test_database_gate.py` | 14 runner/manifest methods; no database connection or migration |
+| `node node_modules/typescript/bin/tsc -p tsconfig.app.json --noEmit` | Passed |
+| `node node_modules/typescript/bin/tsc -p tsconfig.node.json --noEmit` | Passed |
+| `node tests/status_contract_consistency.test.mjs` | 6 static checks; not runtime grading |
+| AST parsing of pending Python files | All 10 parsed |
+| Pending-file literal-secret-pattern scan | 19 reviewed files; zero candidates, no secret values printed |
+| `git diff --check` before staging | Passed; informational LF/CRLF warnings only |
+
+Normal-user parser execution avoids the known Windows sandbox temp-file permission
+restriction. Host prerequisite inspection found Docker SDK, Celery, asyncpg and
+fcntl absent from the project venv. Linux/root workspace and packaged worker suites
+therefore were not rerun here; the actual-image results in the reliability report
+remain prior evidence (workspace 10, worker 8, diagnostics 3, parser 9 methods).
+No installs, builds, container runs, WASM overlap/stress, live writes or service
+starts were performed. Stage-time whitespace/inventory checks and actual push
+outcomes must be verified by the checkpoint task before claiming success.
+
+### Intended checkpoint inventory
+
+Initial: eight modified tracked files and eleven untracked files, none staged.
+With this update: nine tracked modifications plus eleven new files, **20 intended
+checkpoint files**. Explicitly stage only:
+
+```text
+.env.example
+docker-compose.yml
+execution/Dockerfile
+execution/.dockerignore
+execution/run.sh
+worker/requirements.txt
+worker/execution/evaluator.py
+worker/execution/sandbox.py
+worker/execution/workspace.py
+worker/execution/diagnostics.py
+tests/VERDICT_INTEGRITY.md
+tests/test_verdict_integrity.py
+tests/test_native_workspace.py
+tests/test_native_diagnostics.py
+tests/native_sandbox_probe.py
+tests/native_reliability_probe.py
+tools/native_sandbox_gate.py
+docs/handoff/NATIVE_SANDBOX_WORKSPACE_REPORT.md
+docs/handoff/NATIVE_SANDBOX_RELIABILITY_REPORT.md
+docs/handoff/PAUSE_CHECKPOINT.md
+```
+
+Private recovery artifacts, exact-resource journals/results, credentials, local env
+files, caches, dependencies and Docker volumes remain outside this commit. Git is
+not a backup of them. Historical reports are preserved byte-for-byte.
+
+### Exact next separately authorized gate
+
+First reread this section and both reports, recheck branch/HEAD/origin/remote parity,
+and inspect the working tree. Before any live writes independently reverify the
+disposable Supabase project, retained volume/labels, roles, ledger/checksums and
+secure credential provenance; current database state was not checked here.
+
+Next engineering milestone: a narrowly scoped **real API -> isolated Redis ->
+Celery -> native correct/wrong job gate**, requiring explicit authorization for
+exact disposable identities/challenge/submission fixtures, services, workspace and
+cleanup. Use restricted API/worker SQL identities, the reviewed bounded volume and
+executor settings, loopback-only API exposure and no host Redis port. Correlate real
+HTTP submission/task IDs, worker receipt, actual native compilation/simulation,
+durable owner-only polling and independent exact cleanup. Fixture publication is
+test setup, not native administrator lifecycle validation. Quiesce publishers and
+workers before reviewed FK-ordered cleanup; retain journals for uncertain outcomes.
+
+Do not start that gate from this document. No seed 002, applied migration/checksum
+change, volume replacement, reset, grant broadening or administrative runtime
+fallback. Observe accounting without changing XP/job lifecycle or certifying it.
+Atomic dispatch/claims, exactly-once, accounting correctness, revision-bound
+authoring, snapshot restore, historical SQL/SDK timeout attribution, crash recovery,
+existing LAN exposure and production readiness remain unresolved. Stop after this
+checkpoint's commit/push/parity confirmation; do not begin another milestone.
+
+---
+
 ## Redis/Celery delivery checkpoint review — 2026-10-02
 
 This section supersedes the older availability, pending-change and unverified

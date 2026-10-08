@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import sys
 import unittest
+import tempfile
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +23,35 @@ NONCE = 'a' * 64
 CATALOG = (ROOT / 'src/evaluator/testbenchCatalog.ts').read_text()
 BENCH = re.search(r'const AND_GATE_TESTBENCH = `([\s\S]*?)`;', CATALOG)[1].replace('\\`', '`')
 CORRECT = 'module and_gate(input a,input b,output y); assign y=a&b; endmodule'
+
+
+class ReadTimeout(Exception):
+    """Controlled transport fault, not reproduction of a real daemon timeout."""
+
+
+@contextmanager
+def mocked_workspace(container):
+    """Controlled storage/transport only; the separate native gate proves mounts."""
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory)
+        workspace = Mock()
+        workspace.volume = 'mock-volume'
+        def create(source, bench):
+            (path / 'submission.v').write_text(source)
+            (path / 'testbench.v').write_text(bench)
+            return dict(job='1' * 32, container='mock-executor', owner='2' * 64)
+        record = dict(job='1' * 32, container='mock-executor', owner='2' * 64)
+        workspace.reserve.return_value = record
+        workspace.populate.side_effect = lambda record, source, bench: create(source, bench)
+        workspace.mounts.return_value = [{'source': directory}]
+        def stage(record, name):
+            target = path / name
+            return int(target.read_text()) if target.exists() else None
+        workspace.stage_exit.side_effect = stage
+        workspace.resource_evidence.return_value = dict(pid_limit_events=0, memory_limit_events=0, workspace_free_bytes=1000000)
+        workspace.cleanup.side_effect = lambda record: container.remove(force=True)
+        with patch('worker.execution.sandbox.Workspace', return_value=workspace):
+            yield
 
 
 def execution(output='', **overrides):
@@ -57,6 +88,10 @@ class VerdictIntegrityTests(unittest.TestCase):
                            ('verdict_nonce', ''), ('expected_total', None)]:
             with self.subTest(key=key, value=value):
                 self.assertEqual(parse_evaluation_result({**good, key: value})['status'], 'system_error')
+        self.assertEqual(parse_evaluation_result({**good, 'cleanup_success': False})['status'], 'system_error')
+        self.assertEqual(parse_evaluation_result({**good, 'cleanup_error': True})['error_code'], 'SANDBOX_CLEANUP_FAILED')
+        for resource in ('memory', 'pids', 'workspace', 'file', 'admission'):
+            self.assertEqual(parse_evaluation_result({**good, 'resource_failure': resource})['status'], 'resource_limit')
         self.assertEqual(parse_evaluation_result({**good, 'timed_out': True})['status'], 'timeout')
         self.assertEqual(parse_evaluation_result({**good, 'stderr': good['stdout']})['status'], 'system_error')
         for missing in ('output_complete', 'output_truncated', 'timed_out'):
@@ -140,7 +175,10 @@ class VerdictIntegrityTests(unittest.TestCase):
         for mode, expected in [('valid', 'accepted'), ('compile_failure', 'compilation_error'),
                                ('run_failure', 'system_error'), ('missing_stage', 'system_error'),
                                ('partial_logs', 'system_error'), ('truncated', 'system_error'),
-                               ('duplicate', 'system_error'), ('wait_exception', 'system_error')]:
+                               ('duplicate', 'system_error'), ('early_eof', 'system_error'), ('wait_exception', 'system_error'),
+                               ('create_timeout', 'system_error'), ('start_timeout', 'system_error'),
+                               ('inspect_timeout', 'system_error'), ('wait_timeout', 'system_error'),
+                               ('cleanup_timeout', 'system_error')]:
             with self.subTest(mode=mode):
                 sandbox = DockerSandbox.__new__(DockerSandbox)
                 sandbox.image = 'unused-mock-image'
@@ -148,12 +186,19 @@ class VerdictIntegrityTests(unittest.TestCase):
                 sandbox.max_output_bytes = 65536
                 sandbox.client = Mock()
                 container = Mock()
+                container.attrs = {'State': {'Running': mode == 'early_eof'}}
                 container.wait.return_value = {'StatusCode': 0}
                 if mode == 'wait_exception':
                     container.wait.side_effect = OSError('transport lost')
+                for selected, method in [('start_timeout', container.start), ('inspect_timeout', container.reload),
+                                         ('wait_timeout', container.wait), ('cleanup_timeout', container.remove)]:
+                    if mode == selected:
+                        method.side_effect = ReadTimeout('unsafe student source/secret transport details')
 
                 def launched(**kwargs):
-                    workspace = Path(next(iter(kwargs['volumes'])))
+                    if mode == 'create_timeout':
+                        raise ReadTimeout('unsafe student source/secret transport details')
+                    workspace = Path(kwargs['mounts'][0]['source'])
                     source = (workspace / 'testbench.v').read_text()
                     token = re.search(r'VQ_TRUSTED:([a-f0-9]{64}):', source)[1]
                     if mode != 'missing_stage':
@@ -174,14 +219,25 @@ class VerdictIntegrityTests(unittest.TestCase):
                     container.attach.side_effect = lambda **_: frames()
                     return container
 
-                sandbox.client.containers.run.side_effect = launched
-                with patch.dict('os.environ', {'MAX_OUTPUT_BYTES': '65536'}):
-                    result = parse_evaluation_result(sandbox.execute(CORRECT, BENCH))
+                sandbox.client.containers.create.side_effect = launched
+                with mocked_workspace(container):
+                    raw = sandbox.execute(CORRECT, BENCH)
+                    result = parse_evaluation_result(raw)
                 self.assertEqual(result['status'], expected)
                 container.remove.assert_called_once_with(force=True)
                 container.logs.assert_not_called()
                 if mode == 'truncated':
                     container.kill.assert_called()
+                if mode.endswith('_timeout'):
+                    phase = {'create_timeout': 'create', 'start_timeout': 'start',
+                             'inspect_timeout': 'inspect.after_output', 'wait_timeout': 'wait',
+                             'cleanup_timeout': 'workspace.cleanup'}[mode]
+                    self.assertEqual(raw['failure_phase'], phase)
+                    self.assertTrue(any(e['phase']==phase and e.get('category')=='timeout' for e in raw['rpc_events']))
+                    self.assertNotIn('unsafe student', repr(raw['rpc_events']))
+                    self.assertFalse(result['counts_as_attempt'])
+                    if mode == 'cleanup_timeout':
+                        self.assertEqual(result['error_code'], 'SANDBOX_CLEANUP_FAILED')
 
     def test_stream_budget_stops_before_unbounded_generator(self):
         sandbox = DockerSandbox.__new__(DockerSandbox)
@@ -190,9 +246,10 @@ class VerdictIntegrityTests(unittest.TestCase):
         sandbox.max_output_bytes = 128
         sandbox.client = Mock()
         container = Mock()
+        container.attrs = {'State': {'Running': False}}
         container.wait.return_value = {'StatusCode': 0}
         def launch(**kwargs):
-            workspace = Path(next(iter(kwargs['volumes'])))
+            workspace = Path(kwargs['mounts'][0]['source'])
             token = re.search(r'VQ_TRUSTED:([a-f0-9]{64}):', (workspace / 'testbench.v').read_text())[1]
             (workspace / 'compile.exit').write_text('0')
             (workspace / 'simulation.exit').write_text('0')
@@ -202,8 +259,8 @@ class VerdictIntegrityTests(unittest.TestCase):
                 raise AssertionError('Full stream was consumed after overflow')
             container.attach.side_effect = lambda **_: frames()
             return container
-        sandbox.client.containers.run.side_effect = launch
-        with patch.dict('os.environ', {'MAX_OUTPUT_BYTES': '256'}):
+        sandbox.client.containers.create.side_effect = launch
+        with mocked_workspace(container):
             raw = sandbox.execute(CORRECT, BENCH)
         self.assertFalse(raw['output_complete'])
         self.assertTrue(raw['output_truncated'])

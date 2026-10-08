@@ -95,12 +95,39 @@ output after the grader, before/after combinations, conflicting and duplicate
 trusted records, missing records, failed processes with successful-looking
 output, stale tokens, inconsistent counts, capability attacks, and log loss.
 
-To additionally run real worker container parity, append `--docker` to the Node
-command. It requires an already-running Docker daemon, Python Docker SDK, and
-prebuilt execution image; the test preflights the image and does not build/pull.
-Absent prerequisites are failures/blockers, never passing container tests.
+## Native workspace gate (separate from WASM)
 
-Next validation milestone: run this container parity suite in a provisioned
-environment and verify the existing workspace ownership/mount and shell exit
-recording behavior, including compilation failures and cleanup. No commit,
-deployment, database, or scoring validation is implied by these tests.
+The native adapter now requires a Linux worker container with root/file-ownership
+authority, Docker access, and a 128MiB tmpfs-backed local named volume at
+`/var/lib/veriquest/workspaces`. `VQ_WORKSPACE_VOLUME` must match the inspected
+worker mount. There is no host/container-private temporary-directory fallback.
+Executors get only generated job input/output volume subpaths, not the whole volume.
+The exact reviewed tmpfs options and actual capacity are checked; persistent
+unbounded volumes are rejected. Admission permits at most four outstanding jobs
+per volume. Interrupted-job records survive caller death while the mount remains,
+but tmpfs is not a power-loss durable journal; host test resource intents remain
+outside Git. No automatic replacement of an existing volume is performed.
+The worker Docker SDK requirement is 7.2 or later; unsupported subpath/isolation
+configuration fails closed before executor startup.
+
+With separately authorized local image builds and temporary resources:
+
+```powershell
+.venv/Scripts/python.exe -B tools/native_sandbox_gate.py --docker <docker-executable> --authorize-native-test
+```
+
+This opt-in gate uses the actual worker/executor Dockerfiles, production sandbox
+and parser, catalog fixtures, actual Docker inspection, permissions and cleanup.
+It creates no database rows/accounts/queues. Safe exact-resource intents/results
+are retained outside Git in a printed temporary directory; job records contain
+no source, bench or token. Failed assertions exit nonzero. The legacy Node
+`--docker` bridge is not a standalone Windows-host setup: it needs this correctly
+mounted worker environment and a prebuilt executor. Absent prerequisites are
+failures/blockers, never passing container tests.
+
+See `docs/handoff/NATIVE_SANDBOX_WORKSPACE_REPORT.md` for executed native evidence,
+including disabled daemon logging and the separate remaining SDK/memory limits.
+The earlier compatibility/limitations section describes the original verdict-only
+milestone, not a claim that the later native workspace changes are unimplemented.
+No queued end-to-end grading, database accounting, deployment or production
+readiness is established by this direct native gate.

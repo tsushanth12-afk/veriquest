@@ -1,0 +1,4 @@
+# Send only the executor build closure, never local source/secret/cache artifacts.
+**
+!Dockerfile
+!run.sh

@@ -38,6 +38,8 @@ services:
     environment:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - DATABASE_URL=${WORKER_DATABASE_URL:?Provide the private vq_worker database configuration}
+      - VQ_WORKSPACE_VOLUME=veriquest_workspaces
+      - EXECUTION_IMAGE=veriquest-icarus:latest
     env_file:
       - path: .env.worker.local
         required: false
@@ -46,6 +48,7 @@ services:
     volumes:
       # Mount Docker socket so worker can spawn execution containers
       - /var/run/docker.sock:/var/run/docker.sock
+      - sandbox_workspaces:/var/lib/veriquest/workspaces
     restart: unless-stopped
 
   # Build the Icarus Verilog execution image
@@ -58,3 +61,10 @@ services:
 
 volumes:
   redis_data:
+  sandbox_workspaces:
+    name: veriquest_workspaces
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=134217728,mode=0700

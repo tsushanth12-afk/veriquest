@@ -22,11 +22,18 @@ def parse_evaluation_result(execution_result: dict) -> dict:
                   public_message='Missing, ambiguous, or inconsistent trusted grader result.',
                   compiler_output=_sanitize_output(output), counts_as_attempt=False)
     # These fields are supplied by the execution adapter, not parsed from HDL output.
+    if (execution_result.get('cleanup_error') or ('cleanup_success' in execution_result
+            and execution_result['cleanup_success'] is not True)):
+        return {**result, 'error_code': 'SANDBOX_CLEANUP_FAILED',
+                'public_message': 'Execution resource cleanup is pending.'}
     if execution_result.get('configuration_error'):
         return {**result, 'status': 'evaluator_not_configured', 'error_code': 'EVALUATOR_NOT_CONFIGURED'}
     if execution_result.get('source_error'):
         return {**result, 'status': 'compilation_error', 'error_code': 'COMPILATION_ERROR',
                 'public_message': 'Unsupported HDL capability or invalid source.', 'counts_as_attempt': True}
+    if execution_result.get('resource_failure') in ('memory', 'pids', 'workspace', 'file', 'admission'):
+        return {**result, 'status': 'resource_limit', 'error_code': 'RESOURCE_LIMIT',
+                'public_message': 'Execution resource limit reached.'}
     if execution_result.get('timed_out') is True:
         return {**result, 'status': 'timeout', 'error_code': 'TIMEOUT',
                 'public_message': 'Execution timed out.', 'counts_as_attempt': True}
@@ -58,4 +65,5 @@ def parse_evaluation_result(execution_result: dict) -> dict:
 def _sanitize_output(text: str, max_len: int = 4000) -> str:
     return '\n'.join(line for line in text.split('\n')
                      if not any(secret in line for secret in
-                                ('/workspace/testbench.v', '/workspace/run.sh', 'private.', 'challenge_secrets')))[:max_len]
+                                ('/workspace/testbench.v', '/workspace/input/testbench.v',
+                                 '/workspace/run.sh', 'private.', 'challenge_secrets')))[:max_len]
