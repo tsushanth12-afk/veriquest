@@ -1,5 +1,206 @@
 # VeriQuest pause checkpoint
 
+## Queued-native Git checkpoint review — 2026-10-09
+
+This section supersedes the saved-but-uncommitted inventory below. Preserve the
+completed queued-native report, its historical blocked attempt, and earlier
+checkpoint sections. The user authorized a reviewed six-file commit on main and
+normal push, with the exact message:
+
+```text
+Verify queued native grading and record accounting discrepancy
+```
+
+Reviewed parent: `main`, HEAD `49b51f94cddb3848719212975f46169986d9efaa`, message
+`Bound native grading workspaces and verify resource failures`. Project path is
+`C:\Users\tsush\Desktop\veriquest`. Origin fetch and push URLs both verified as
+`https://github.com/tsushanth12-afk/veriquest.git`. The first restricted-network
+remote query failed with a resolver error; the authorized normal-user read-only
+`git ls-remote origin refs/heads/main` succeeded and matched the parent. No divergence
+or unexpected pending file was found. Initial inventory: nothing staged, one
+tracked modification and five untracked intended files.
+
+### Scope reviewed and checks executed for this checkpoint
+
+Read all six intended files completely, including historical report/checkpoint
+sections. Reviewed inherited intent/cleanup helpers, build exclusions and current
+attempt-update source as needed. No blocking credential exposure, unsafe broad
+deletion, unrelated production edit or fabricated grading fallback was identified.
+The root worker's Docker socket and narrow ownership capabilities remain explicit
+privileged authority; API/executor do not receive the socket. Recovery uses exact
+sealed names/markers and stops on drift/uncertain inspection, not prefix deletion.
+No implementation or historical report was edited for this checkpoint; only this
+document was updated. Pre-push review/commit skills informed the inventory and
+safety review; user restrictions excluded broader edits and live service checks.
+
+| Check actually executed | Result and limits |
+| --- | --- |
+| `.venv/Scripts/python.exe -B tests/test_queued_native_grading.py` | Exit 0; nine helper methods. Controlled transport/sealing fixtures, not live grading. |
+| In-memory AST parsing and compile checks | Exit 0; all four intended Python files; no bytecode/cache files written. |
+| Limited credential-pattern and full pending-file whitespace scan | Exit 0; six files, zero candidate credentials/whitespace findings. Not exhaustive secret/security certification. |
+| Historical report/checkpoint preservation check | Exit 0; blocked report suffix retained with SHA256 4f0bbc64e1f675c6a1b2519b051a77f4f9548f3908268795b14537601a9b29d6; previous committed checkpoint sections unchanged. |
+| Read-only inspection of five retained encrypted queued-native receipts | Exit 0; unique successful six-task receipt agrees with 290 assertions, 19 HTTP cases, six publications/receipts/native correlations, 31 daemon events, 20 observations and prior cleanup. Only safe counts/booleans emitted. No database/service query. |
+| `git diff --check` before checkpoint update/staging | Exit 0; LF/CRLF informational warning only. |
+
+The receipt also reconfirms **six submissions / five profile attempts / ten
+progress attempts**, one 1-XP ledger award, and prior final empty application/Auth
+counts with audit history 168. This is verification of retained execution evidence,
+not a new live run or a claim about current database/service state. No live harness,
+image build, service start, install, account creation, migration or database write
+was performed. Private recovery snapshots/credentials/journals remain outside
+Git/build contexts; no private payload, .venv, dependency or cache is staged.
+
+### Explicit intended commit inventory and resume boundary
+
+```text
+docs/handoff/PAUSE_CHECKPOINT.md
+docs/handoff/QUEUED_NATIVE_GRADING_REPORT.md
+tests/queued_native_observer.py
+tests/queued_native_probe.py
+tests/test_queued_native_grading.py
+tools/queued_native_grading.py
+```
+
+This precommit section does not assert future staging/commit/push success. Inspect
+the staged inventory/diff and whitespace, then obtain the actual resulting commit
+hash, normal push outcome and fresh remote parity from Git and the checkpoint
+task's final response. The checkpoint commit is the commit containing this section.
+Stop on rejection without pull, reset, force push or automatic merge.
+
+Queued-native success is locally verified for the documented sequential AND-derived
+fixtures only. Accounting consistency, terminal-result/accounting atomicity,
+queued concurrency, concurrent idempotency/outbox/crash recovery, bonus accounting,
+revision-safe publication, all-four-catalog queued coverage, snapshot restoration,
+LAN containment, historical timeout causes and production readiness remain open.
+Do not begin accounting remediation or another milestone after this checkpoint.
+On return, first read this section/report and reverify Git; environment/live writes
+require a separate request and exact-target preflight. Leave Supabase unchanged.
+
+---
+
+## Queued native grading saved checkpoint — 2026-10-09
+
+Saved at the user's request. This section supersedes older next-gate/pending-file
+statements below; preserve those historical sections and all milestone reports.
+This is a local disk checkpoint, not a commit or remote backup.
+
+### Current repository state
+
+Project: `C:\Users\tsush\Desktop\veriquest`.
+Save-time read-only Git verification: branch `main`, HEAD
+`49b51f94cddb3848719212975f46169986d9efaa`, latest commit message
+`Bound native grading workspaces and verify resource failures`.
+Expected origin: `https://github.com/tsushanth12-afk/veriquest.git`; origin and
+remote-main parity were verified at the beginning of the completed gate. No fresh
+remote query was performed while saving; reverify parity on resume.
+
+Staged files: none. After this save, one modified tracked file and five untracked
+files are intended. No other pending file was observed in the save-time inventory:
+
+```text
+Modified tracked:
+docs/handoff/PAUSE_CHECKPOINT.md
+
+Untracked:
+docs/handoff/QUEUED_NATIVE_GRADING_REPORT.md
+tests/queued_native_observer.py
+tests/queued_native_probe.py
+tests/test_queued_native_grading.py
+tools/queued_native_grading.py
+```
+
+The existing native workspace/reliability changes are already in HEAD; the new
+queued-native harness/tests/report are not committed or pushed. Saving changes only
+this checkpoint. Implementation and the completed report are preserved.
+
+### Completed gate — prior executed evidence, not rerun during saving
+
+Read `docs/handoff/QUEUED_NATIVE_GRADING_REPORT.md` first on resume. It retains the
+original blocked zero-reward attempt, three failed resumed harness attempts and
+their corrections, one exact recovery, and the final successful run. The user
+authorized fixtures with reward 1 XP; zero-reward support was not added.
+
+Final corrected opt-in gate: exit 0, **290 assertions, 19 recorded API HTTP cases,
+six actual Redis publications, six worker receipts and six real native executors**.
+Real Supabase Auth, packaged API/full lifespan, restricted API/worker SQL pools,
+Redis, Celery, native Docker/Icarus, production verdict parser and unchanged
+accounting calls ran. This was sequential, with one Celery consumer, not a queued
+concurrency test. Queued fixtures were catalog-derived AND challenges; historical
+all-four-catalog direct native tests are separate evidence.
+
+- Correct: accepted, 4/4, 1 XP. Wrong and actual forged status/counter output:
+  wrong_answer, 2/4, zero XP. Syntax: compilation_error, zero XP.
+- Infinite simulation: timeout, container exit 137, incomplete capture and zero
+  XP. A subsequent ordinary new-key job was accepted with no second challenge XP.
+- Every owner result GET returned 200; the other student received 404 for each.
+  Sequential duplicate POST returned the same submission, without another broker
+  publication/executor or observable accounting state change.
+- Independent daemon events, bounded process/output evidence, trusted-summary
+  checks, actual executor settings and exact cleanup correlated the six jobs.
+  No production grading retry, enlarged deadline or Docker restart obtained a pass.
+- API had no Docker socket; executors were non-root, network-none/read-only-root,
+  capabilities dropped, with exact RO-input/RW-output subpaths and bounded limits.
+  Worker socket authority remains an explicit privileged boundary. The workspace
+  used required 128MiB tmpfs options and unchanged four-job admission; old plain
+  volumes were not replaced and tmpfs recovery remains volatile.
+
+**Observed accounting discrepancy, not fixed:** six distinct submissions produced
+profile total_attempts=5 and progress attempts=8+2=10. One XP ledger entry awarded
+1 XP; a new accepted repeat awarded zero additional XP but updated the streak again.
+No quests/badges were defined. This does not certify scoring or attempt accounting.
+The report traces current separate API/worker increments and the accepted-repeat
+early return. No accounting exception prevented final terminal success.
+
+Previously executed focused checks all exited 0: actual API image pytest 52;
+actual worker dispatch/parser 8/9 methods; new queued helper tests 9; host parser,
+database runner and generated-key Auth 9/14/17; diagnostics/delivery/exact-resource/
+DPAPI driver 3/8/7/6; both TypeScript noEmit checks; six static status checks;
+AST/limited secret-pattern/whitespace checks and historical blocked-section
+preservation. Controlled/mocked helper tests are distinguished from live results
+in the report. They were not rerun merely to save this checkpoint.
+
+### Cleanup and retained environment
+
+Prior independent final verification checked all four exact run intents: task
+services, executors, networks, workspace volumes and image tags absent. Publishers
+and workers were quiesced before fixture deletion; final queued/unacked counts were
+0/0. All fourteen application tables, Auth users and identities were empty; Auth
+audit history was retained at 168. Applied 001/003/004/005, deferred seed 002,
+restricted roles, full permission assertions and original Supabase inventories
+were preserved. Ten Supabase containers remained in their original states: nine
+running, with the preexisting edge service exited. No task-owned host observer or
+launcher remained. Private recovery artifacts/journals/receipts remain protected
+outside Git and build contexts; Git is not their backup.
+
+Those are completion-time observations, not fresh Docker/database checks during
+this save. No services were started, stopped or queried while saving. No migration,
+grant, account, implementation, commit, push, deployment or firewall change occurs
+here. It is safe to close Codex; leave existing Supabase unchanged.
+
+### Remaining gates and exact next step
+
+Next proposed engineering task, requiring separate authorization: define and fix
+authoritative attempt-accounting semantics for new submissions, duplicate keys and
+new submissions to completed challenges; review terminal-result/accounting
+transaction boundaries. Begin from the observed 6/5/10 discrepancy, with focused
+tests, not a silent XP algorithm or migration change.
+
+Also unresolved: queued concurrency, atomic claims/outbox/delivery, concurrent
+idempotency, crash reconciliation, bonus/quest/badge accounting, revision-safe admin
+publication, arbitrary future templates/all-four-catalog queued coverage, historical
+SQL/Docker SDK ReadTimeout attribution, tmpfs power/remount recovery, snapshot
+restoration, existing LAN exposure and production readiness.
+
+On return, read this section and the queued-native report, then perform a read-only
+branch/HEAD/origin/remote-parity/working-tree recheck. Before separately authorized
+environment work, verify the same disposable Supabase target, retained volume,
+labels, ledger/checksums, restricted roles and private provenance. Discuss the next
+specific milestone, or request a reviewed Git checkpoint of the six files above.
+Do not automatically run live/recovery harnesses, create accounts, start services,
+reapply migrations, run seed 002, reset, broaden grants, commit or push on resume.
+
+---
+
 ## Native workspace/reliability checkpoint review — 2026-10-08
 
 This section supersedes the older native-work-pending and next-gate statements
